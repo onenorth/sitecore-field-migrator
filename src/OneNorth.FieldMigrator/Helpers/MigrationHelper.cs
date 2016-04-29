@@ -59,9 +59,12 @@ namespace OneNorth.FieldMigrator.Helpers
             var parentTemplates = sourceItem.Parents(x => x.Parent)
                 .Select(parent => _configuration.Templates.FirstOrDefault(x => x.TemplateId == parent.TemplateId))
                 .Where(x => x != null);
+
+            // If template not registered in config, skip; unless parent template indicates to include all children.
             if (template == null && !parentTemplates.Any(x => x.IncludeAllChildren))
                 return;
 
+            // Determing the template id to use in the target
             var templateId = (template != null && template.TargetTemplateId != Guid.Empty)
                 ? template.TargetTemplateId
                 : sourceItem.TemplateId;
@@ -154,35 +157,33 @@ namespace OneNorth.FieldMigrator.Helpers
 
             using (new EditContext(item, SecurityCheck.Disable))
             {
-                foreach (var webServiceField in itemVersionModel.Fields)
+                foreach (var itemFieldModel in itemVersionModel.Fields)
                 {
-                    if (string.IsNullOrEmpty(webServiceField.Key) ||
-                        (webServiceField.Key.StartsWith("__") &&
-                        !webServiceField.Key.Equals("__display name") &&
-                        !webServiceField.Key.Equals("__hidden") &&
-                        !webServiceField.Key.Equals("__hide version") &&
-                        !webServiceField.Key.Equals("__never publish") &&
-                        !webServiceField.Key.Equals("__sortorder")))
+                    
+                    if (string.IsNullOrEmpty(itemFieldModel.Name) ||
+                        (itemFieldModel.Name.StartsWith("__") &&
+                        !_configuration.StandardFields.Contains(itemFieldModel.Name, StringComparer.OrdinalIgnoreCase)))
                         continue;
 
-                    var field = item.Fields[webServiceField.Key];
+                    var field = item.Fields[itemFieldModel.Name];
                     if (field == null)
                         continue;
 
-                    if (webServiceField.Value == null)
+                    if (itemFieldModel.StandardValue)
                         field.Reset();
                     else 
-                        field.Value = webServiceField.Value;
+                        field.Value = itemFieldModel.Value;
                 }
 
-                var workflow = item.Database.WorkflowProvider.GetWorkflow(item);
-                if (workflow != null)
+                if (!itemVersionModel.HasWorkflow || (itemVersionModel.HasWorkflow && itemVersionModel.InFinalWorkflowState))
                 {
-                    var states = workflow.GetStates();
-                    var finalState = states.First(x => x.FinalState);
-                    var currentState = workflow.GetState(item);
-                    if (currentState != finalState)
+                    var workflow = item.Database.WorkflowProvider.GetWorkflow(item);
+                    if (workflow != null)
+                    {
+                        var states = workflow.GetStates();
+                        var finalState = states.First(x => x.FinalState);
                         item.Fields["__Workflow state"].Value = finalState.StateID;
+                    }
                 }
             }
         }

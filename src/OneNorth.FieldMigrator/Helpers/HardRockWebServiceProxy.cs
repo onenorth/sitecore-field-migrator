@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.ServiceModel;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using OneNorth.FieldMigrator.Configuration;
@@ -22,7 +23,7 @@ namespace OneNorth.FieldMigrator.Helpers
 
         private readonly IFieldMigratorConfiguration _configuration;
         private readonly SitecoreWebService2SoapClient _service;
-        private readonly ConcurrentDictionary<Guid, TemplateModel> _templates; 
+        private readonly ConcurrentDictionary<Guid, WorkflowModel> _workFlows;
 
         private HardRockWebServiceProxy() : this(FieldMigratorConfiguration.Instance)
         {
@@ -32,8 +33,11 @@ namespace OneNorth.FieldMigrator.Helpers
         internal HardRockWebServiceProxy(IFieldMigratorConfiguration configuration)
         {
             _configuration = configuration;
-            _service = new SitecoreWebService2SoapClient();
-            _templates = new ConcurrentDictionary<Guid, TemplateModel>();
+            _workFlows = new ConcurrentDictionary<Guid, WorkflowModel>();
+
+            var binding = new BasicHttpBinding(BasicHttpSecurityMode.None) {MaxReceivedMessageSize = 20000000};
+            var remoteAddress = new EndpointAddress(_configuration.SourceEndpointAddress);
+            _service = new SitecoreWebService2SoapClient(binding, remoteAddress);
         }
 
         public IEnumerable<ChildModel> GetChildren(Guid parentId)
@@ -73,6 +77,9 @@ namespace OneNorth.FieldMigrator.Helpers
                 Password = _configuration.SourcePassword
             };
 
+            var workflow = GetWorkflow(new Guid("{048E8BB8-1066-484D-B345-BA18264531A2}"));
+            //var workflowResults = _service.GetXML("{048E8BB8-1066-484D-B345-BA18264531A2}", deep, _configuration.SourceDatabase, credentials);
+
             var results = _service.GetXML(id.ToString().ToUpper(), deep, _configuration.SourceDatabase, credentials);
             var itemElement = results.XPathSelectElement("//item");
             if (itemElement == null)
@@ -86,7 +93,7 @@ namespace OneNorth.FieldMigrator.Helpers
             if (itemElement == null || itemElement.Name != "item")
                 return null;
 
-            var webServiceItem = new ItemModel
+            var itemModel = new ItemModel
             {
                 Id = Guid.Parse(itemElement.Attribute("id").Value),
                 Name = itemElement.Attribute("name").Value,
@@ -97,56 +104,73 @@ namespace OneNorth.FieldMigrator.Helpers
                 TemplateName = itemElement.Attribute("template").Value
             };
 
-            var templateFields = GetAllTemplateFields(webServiceItem.TemplateId);
-
-            // Gather the versions
+            // Gather the latest versions
             var childVersionElements = itemElement.Elements("version");
-            webServiceItem.Versions = childVersionElements.Select(x => GetVersion(x, templateFields)).ToList();
+            itemModel.Versions = childVersionElements.Select(GetVersion)
+                .OrderBy(x => x.Language)
+                .ThenByDescending(x => x.Version)
+                .GroupBy(x => x.Language)
+                .Select(x => x.First())
+                .ToList();
+
+            // Populate the fields
+            foreach(var version in itemModel.Versions)
+                PopulateFields(itemModel.Id, version);
 
             // Gather the children
             var childItemElements = itemElement.Elements("item");
-            webServiceItem.Children = childItemElements.Select(x => GetItem(x, webServiceItem)).ToList();
+            itemModel.Children = childItemElements.Select(x => GetItem(x, itemModel)).ToList();
 
-            return webServiceItem;
+            return itemModel;
         }
 
-        private ItemVersionModel GetVersion(XElement versionElement, List<TemplateFieldModel> templateFields)
+        private ItemVersionModel GetVersion(XElement versionElement)
         {
             if (versionElement == null || versionElement.Name != "version")
                 return null;
 
-            var webServiceVersion = new ItemVersionModel
+            var itemVersionModel = new ItemVersionModel
             {
-                Fields = new List<ItemFieldModel>(),
                 Language = versionElement.Attribute("language").Value,
                 Version = int.Parse(versionElement.Attribute("version").Value)
             };
 
-            // Grab fields set on the item
-            var fieldsElement = versionElement.Element("fields");
-            if (fieldsElement != null)
-                webServiceVersion.Fields.AddRange(fieldsElement.Elements().Select(GetField));
+            return itemVersionModel;
+        }
 
-            // Add the remaining fields from the template and enrich the fields from the item.
-            foreach (var templateField in templateFields)
+        private void PopulateFields(Guid itemId, ItemVersionModel version)
+        {
+            if (version == null)
+                return;
+
+            var credentials = new Credentials
             {
-                var itemField = webServiceVersion.Fields.FirstOrDefault(x => x.Id == templateField.Id);
-                if (itemField != null)
-                    itemField.Name = templateField.Name; // Enrich with the name.
-                else
-                {
-                    webServiceVersion.Fields.Add(new ItemFieldModel
-                    {
-                        Id = templateField.Id,
-                        Key = templateField.Key,
-                        Name = templateField.Name,
-                        Type = templateField.Type,
-                        Value = null
-                    });
-                }
-            }
+                UserName = _configuration.SourceUserName,
+                Password = _configuration.SourcePassword
+            };
 
-            return webServiceVersion;
+            var results = _service.GetItemFields(itemId.ToString().ToUpper(), version.Language, version.Version.ToString(), true, _configuration.SourceDatabase, credentials);
+            version.Fields = results.Descendants("field")
+                .Select(GetField)
+                .Where(x => x != null)
+                .ToList();
+
+            // Determine workflow
+            var workflowField = version.Fields.FirstOrDefault(x => string.Equals(x.Name, "__Workflow", StringComparison.OrdinalIgnoreCase));
+            var workflow = (workflowField != null && !string.IsNullOrEmpty(workflowField.Value))
+                ? GetWorkflow(new Guid(workflowField.Value))
+                : null;
+
+            if (workflow != null)
+            {
+                version.HasWorkflow = true;
+
+                var workflowStateField = version.Fields.FirstOrDefault(x => string.Equals(x.Name, "__Workflow state", StringComparison.OrdinalIgnoreCase));
+                var workflowState = (workflowStateField != null && !string.IsNullOrEmpty(workflowStateField.Value))
+                    ? new Guid(workflowStateField.Value)
+                    : Guid.Empty;
+                version.InFinalWorkflowState = workflow.FinalState == workflowState;
+            }
         }
 
         private ItemFieldModel GetField(XElement fieldElement)
@@ -154,37 +178,27 @@ namespace OneNorth.FieldMigrator.Helpers
             if (fieldElement == null || fieldElement.Name != "field")
                 return null;
 
-            var content = fieldElement.Element("content");
-            var value = (content != null) ? content.Value : "";
-            var webServiceField = new ItemFieldModel
+            var valueElement = fieldElement.Element("value");
+            var value = (valueElement != null) ? valueElement.Value : "";
+ 
+            var itemFieldModel = new ItemFieldModel
             {
-                Id = Guid.Parse(fieldElement.Attribute("tfid").Value),
-                Key = fieldElement.Attribute("key").Value,
+                Id = Guid.Parse(fieldElement.Attribute("fieldid").Value),
+                Name = fieldElement.Attribute("name").Value,
+                StandardValue = int.Parse(fieldElement.Attribute("standardvalue").Value) == 1,
                 Type = fieldElement.Attribute("type").Value,
                 Value = value
             };
 
-            return webServiceField;
+            return itemFieldModel;
         }
 
-        private List<TemplateFieldModel> GetAllTemplateFields(Guid templateId)
+        private WorkflowModel GetWorkflow(Guid id)
         {
-            var template = GetTemplate(templateId);
-            var templates = template.Flatten(x => x.BaseTemplates);
-            var templateFields = templates
-                .SelectMany(x => x.Fields)
-                .GroupBy(x => x.Id)
-                .Select(x => x.FirstOrDefault())
-                .ToList();
-            return templateFields;
+            return _workFlows.GetOrAdd(id, GetWorkflowFactory);
         }
 
-        private TemplateModel GetTemplate(Guid templateId)
-        {
-            return _templates.GetOrAdd(templateId, GetTemplateFactory);
-        }
-
-        private TemplateModel GetTemplateFactory(Guid templateId)
+        private WorkflowModel GetWorkflowFactory(Guid id)
         {
             var credentials = new Credentials
             {
@@ -192,75 +206,20 @@ namespace OneNorth.FieldMigrator.Helpers
                 Password = _configuration.SourcePassword
             };
 
-            var results = _service.GetXML(templateId.ToString().ToUpper(), true, _configuration.SourceDatabase, credentials);
+            var results = _service.GetXML(id.ToString().ToUpper(), true, _configuration.SourceDatabase, credentials);
 
-            var templateItemElement = results.XPathSelectElement("//item");
-            if (templateItemElement == null)
+            var stateItemElement = results.Descendants("item")
+                .FirstOrDefault(x => x.Attribute("template").Value == "state" && x.Descendants("field").Where(f => f.Attribute("key").Value == "final").Descendants("content").Any(c => c.Value == "1"));
+            if (stateItemElement == null)
                 return null;
 
-            return GetTemplateItem(templateItemElement);
-        }
-
-        private TemplateModel GetTemplateItem(XElement templateItemElement)
-        {
-            if (templateItemElement == null || templateItemElement.Name != "item")
-                return null;
-
-            var templateModel = new TemplateModel
+            var workflowModel = new WorkflowModel
             {
-                Id = Guid.Parse(templateItemElement.Attribute("id").Value),
-                Name = templateItemElement.Attribute("name").Value,
+                FinalState = Guid.Parse(stateItemElement.Attribute("id").Value),
+                Id = id
             };
 
-            // Skip the standard template
-            if (templateModel.Name == "Standard template")
-                return null;
-
-            // Get Base Templates
-            templateModel.BaseTemplates = GetBaseTemplates(templateItemElement);
-
-            // Get Fields
-            var fieldItemElements = templateItemElement.Descendants("item").Where(x => x.Attribute("template").Value == "template field");
-            templateModel.Fields = fieldItemElements.Select(GetTemplateField).ToList();
-
-            return templateModel;
-        }
-
-        private List<TemplateModel> GetBaseTemplates(XElement templateItemElement)
-        {
-            var baseTemplateFieldElement = templateItemElement.Descendants("field").FirstOrDefault(x => x.Attribute("key").Value == "__base template");
-            if (baseTemplateFieldElement == null)
-                return new List<TemplateModel>();
-
-            var content = baseTemplateFieldElement.Element("content");
-            var baseTemplateString = (content != null) ? content.Value : "";
-            if (string.IsNullOrEmpty(baseTemplateString))
-                return new List<TemplateModel>();
-
-            var baseTemplateIds = ID.ParseArray(baseTemplateString).Select(x => x.Guid);
-            return baseTemplateIds.Select(GetTemplate).Where(x => x != null).ToList();
-        }
-
-        private TemplateFieldModel GetTemplateField(XElement fieldItemElement)
-        {
-            if (fieldItemElement == null || fieldItemElement.Name != "item")
-                return null;
-
-            var templateFieldModel = new TemplateFieldModel
-            {
-                Id = Guid.Parse(fieldItemElement.Attribute("id").Value),
-                Key = fieldItemElement.Attribute("key").Value,
-                Name = fieldItemElement.Attribute("name").Value
-            };
-
-            var baseTemplateFieldElement = fieldItemElement.Descendants("field").FirstOrDefault(x => x.Attribute("key").Value == "type");
-            if (baseTemplateFieldElement != null)
-            {
-                var content = baseTemplateFieldElement.Element("content");
-                templateFieldModel.Type = (content != null) ? content.Value : "";
-            }
-
-            return templateFieldModel;
+            return workflowModel;
         }
     }
 }

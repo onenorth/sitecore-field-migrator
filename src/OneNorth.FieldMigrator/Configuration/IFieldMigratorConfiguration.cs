@@ -8,6 +8,7 @@ namespace OneNorth.FieldMigrator.Configuration
 {
     public interface IFieldMigratorConfiguration
     {
+        string SourceEndpointAddress { get; }
         string SourceDatabase { get; }
         string SourceUserName { get; }
         string SourcePassword { get; }
@@ -15,6 +16,7 @@ namespace OneNorth.FieldMigrator.Configuration
         string TargetUserName { get; }
 
         List<IRootConfiguration> Roots { get; }
+        List<string> StandardFields { get; }
         List<ITemplateConfiguration> Templates { get; }
     }
 }

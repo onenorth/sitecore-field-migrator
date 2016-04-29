@@ -27,6 +27,7 @@ namespace OneNorth.FieldMigrator.Configuration
             }
         }
 
+        public string SourceEndpointAddress { get; set; }
         public string SourceDatabase { get; set; }
         public string SourceUserName { get; set; }
         public string SourcePassword { get; set; }
@@ -43,6 +44,13 @@ namespace OneNorth.FieldMigrator.Configuration
                 Name = XmlUtil.GetAttribute("name", node),
                 Id = Guid.Parse(XmlUtil.GetAttribute("id", node))
             });
+        }
+
+        private readonly List<string> _standardFields = new List<string>();
+        public List<string> StandardFields { get { return _standardFields; } }
+        protected void AddStandardField(string field)
+        {
+            _standardFields.Add(field);
         }
 
         private readonly List<ITemplateConfiguration> _templates = new List<ITemplateConfiguration>();
