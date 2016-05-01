@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using OneNorth.FieldMigrator.Configuration;
 using OneNorth.FieldMigrator.Models;
+using OneNorth.FieldMigrator.Pipelines.MigrateItem;
 using Sitecore.Data;
 using Sitecore.Data.Items;
 using Sitecore.Data.Managers;
@@ -22,20 +23,24 @@ namespace OneNorth.FieldMigrator.Helpers
 
         private readonly IFieldMigratorConfiguration _configuration;
         private readonly IHardRockWebServiceProxy _hardRockWebServiceProxy;
+        private readonly IMigrateItemPipeline _migrateItemPipeline;
 
         private MigrationHelper() : this(
             FieldMigratorConfiguration.Instance,
-            HardRockWebServiceProxy.Instance)
+            HardRockWebServiceProxy.Instance,
+            MigrateItemPipeline.Instance)
         {
             
         }
 
         internal MigrationHelper(
             IFieldMigratorConfiguration configuration,
-            IHardRockWebServiceProxy hardRockWebServiceProxy)
+            IHardRockWebServiceProxy hardRockWebServiceProxy,
+            IMigrateItemPipeline migrateItemPipeline)
         {
             _configuration = configuration;
             _hardRockWebServiceProxy = hardRockWebServiceProxy;
+            _migrateItemPipeline = migrateItemPipeline;
         }
 
         public void MigrateRoot(Guid itemId)
@@ -46,7 +51,8 @@ namespace OneNorth.FieldMigrator.Helpers
 
         private void MigrateRoot(ItemModel sourceItem)
         {
-            MigrateItem(sourceItem);
+            //MigrateItem(sourceItem);
+            _migrateItemPipeline.Run(sourceItem);
             foreach (var child in sourceItem.Children)
             {
                 MigrateRoot(child);
