@@ -45,25 +45,5 @@ namespace OneNorth.FieldMigrator.Configuration
                 Id = Guid.Parse(XmlUtil.GetAttribute("id", node))
             });
         }
-
-        private readonly List<string> _standardFields = new List<string>();
-        public List<string> StandardFields { get { return _standardFields; } }
-        protected void AddStandardField(string field)
-        {
-            _standardFields.Add(field);
-        }
-
-        private readonly List<ITemplateConfiguration> _templates = new List<ITemplateConfiguration>();
-        public List<ITemplateConfiguration> Templates { get { return _templates; } }
-        protected void AddTemplate(XmlNode node)
-        {
-            _templates.Add(new TemplateConfiguration
-            {
-                Name = XmlUtil.GetAttribute("name", node),
-                TemplateId = Guid.Parse(XmlUtil.GetAttribute("templateId", node, "{00000000-0000-0000-0000-000000000000}")),
-                IncludeAllChildren = bool.Parse(XmlUtil.GetAttribute("includeAllChildren", node, "false")),
-                TargetTemplateId = Guid.Parse(XmlUtil.GetAttribute("targetTemplateId", node, "{00000000-0000-0000-0000-000000000000}"))
-            });
-        }
     }
 }

@@ -174,7 +174,6 @@
     <Compile Include="Configuration\FieldMigratorConfiguration.cs" />
     <Compile Include="Configuration\RootConfiguration.cs" />
     <Compile Include="Configuration\IFieldMigratorConfiguration.cs" />
-    <Compile Include="Configuration\TemplateConfiguration.cs" />
     <Compile Include="Configuration\IRootConfiguration.cs" />
     <Compile Include="Configuration\ITemplateConfiguration.cs" />
     <Compile Include="EnumerableExtensions.cs" />
@@ -193,7 +192,8 @@
     <Compile Include="Pipelines\CreateItem\CreateItemPipelineArgs.cs" />
     <Compile Include="Pipelines\CreateItem\ICreateItemPipeline.cs" />
     <Compile Include="Pipelines\CreateItem\ICreateItemPipelineProcessor.cs" />
-    <Compile Include="Pipelines\MigrateField\CopyFieldValue.cs" />
+    <Compile Include="Pipelines\MigrateField\CopyFieldOverride.cs" />
+    <Compile Include="Pipelines\MigrateField\CopyField.cs" />
     <Compile Include="Pipelines\MigrateField\MigrateFieldPipeline.cs" />
     <Compile Include="Pipelines\MigrateField\MigrateFieldPipelineArgs.cs" />
     <Compile Include="Pipelines\MigrateField\IMigrateFieldPipeline.cs" />

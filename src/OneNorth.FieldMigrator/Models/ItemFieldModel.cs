@@ -9,5 +9,6 @@ namespace OneNorth.FieldMigrator.Models
         public bool StandardValue { get; set; }
         public string Type { get; set; }
         public string Value { get; set; }
+        public ItemVersionModel Version { get; set; }
     }
 }

@@ -106,7 +106,7 @@ namespace OneNorth.FieldMigrator.Helpers
 
             // Gather the latest versions
             var childVersionElements = itemElement.Elements("version");
-            itemModel.Versions = childVersionElements.Select(GetVersion)
+            itemModel.Versions = childVersionElements.Select(x => GetVersion(x, itemModel))
                 .OrderBy(x => x.Language)
                 .ThenByDescending(x => x.Version)
                 .GroupBy(x => x.Language)
@@ -124,13 +124,14 @@ namespace OneNorth.FieldMigrator.Helpers
             return itemModel;
         }
 
-        private ItemVersionModel GetVersion(XElement versionElement)
+        private ItemVersionModel GetVersion(XElement versionElement, ItemModel owner)
         {
             if (versionElement == null || versionElement.Name != "version")
                 return null;
 
             var itemVersionModel = new ItemVersionModel
             {
+                Item = owner,
                 Language = versionElement.Attribute("language").Value,
                 Version = int.Parse(versionElement.Attribute("version").Value)
             };
@@ -151,7 +152,7 @@ namespace OneNorth.FieldMigrator.Helpers
 
             var results = _service.GetItemFields(itemId.ToString().ToUpper(), version.Language, version.Version.ToString(), true, _configuration.SourceDatabase, credentials);
             version.Fields = results.Descendants("field")
-                .Select(GetField)
+                .Select(x => GetField(x, version))
                 .Where(x => x != null)
                 .ToList();
 
@@ -173,7 +174,7 @@ namespace OneNorth.FieldMigrator.Helpers
             }
         }
 
-        private ItemFieldModel GetField(XElement fieldElement)
+        private ItemFieldModel GetField(XElement fieldElement, ItemVersionModel owner)
         {
             if (fieldElement == null || fieldElement.Name != "field")
                 return null;
@@ -187,7 +188,8 @@ namespace OneNorth.FieldMigrator.Helpers
                 Name = fieldElement.Attribute("name").Value,
                 StandardValue = int.Parse(fieldElement.Attribute("standardvalue").Value) == 1,
                 Type = fieldElement.Attribute("type").Value,
-                Value = value
+                Value = value,
+                Version = owner
             };
 
             return itemFieldModel;

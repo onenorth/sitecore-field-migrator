@@ -12,8 +12,8 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
         public virtual Dictionary<Guid, Guid> Overrides { get { return _overrides; } }
         protected virtual void AddOverride(XmlNode node)
         {
-            var key = Guid.Parse(XmlUtil.GetAttribute("source", node, "{00000000-0000-0000-0000-000000000000}"));
-            var value = Guid.Parse(XmlUtil.GetAttribute("target", node, "{00000000-0000-0000-0000-000000000000}"));
+            var key = Guid.Parse(XmlUtil.GetAttribute("sourceTemplateId", node, "{00000000-0000-0000-0000-000000000000}"));
+            var value = Guid.Parse(XmlUtil.GetAttribute("targetTemplateId", node, "{00000000-0000-0000-0000-000000000000}"));
 
             if (!_overrides.ContainsKey(key))
                 _overrides.Add(key, value);
