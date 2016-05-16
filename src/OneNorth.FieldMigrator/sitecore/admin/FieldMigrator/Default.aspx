@@ -4,15 +4,15 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
-    <title></title>
+    <title>Field Migrator</title>
 </head>
 <body>
     <form id="form1" runat="server">
     <div>
         <h1>Field Migrator</h1>
         
-        <h3>Test</h3>
-        <asp:Button runat="server" ID="TestButton" Text="Run Tag Migration" OnClick="TestButton_OnClick"/><br/>
+        <h3>Run</h3>
+        <asp:Button runat="server" ID="MigrateButton" Text="Run Field Migrator" OnClick="MigrateButton_OnClick"/><br/>
 
     </div>
     </form>

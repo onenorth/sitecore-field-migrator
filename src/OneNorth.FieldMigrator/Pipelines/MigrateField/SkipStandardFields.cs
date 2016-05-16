@@ -10,6 +10,9 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateField
         public virtual List<string> Exceptions { get { return _exceptions; } }
         protected virtual void AddException(string field)
         {
+            if (string.IsNullOrWhiteSpace(field))
+                return;
+
             _exceptions.Add(field);
         }
 

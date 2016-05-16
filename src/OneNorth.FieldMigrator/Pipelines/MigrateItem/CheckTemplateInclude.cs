@@ -6,6 +6,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
     {
         public bool IncludeAllChildren { get; set; }
         public string Name { get; set; }
-        public Guid TemplateId { get; set; }
+        public Guid SourceTemplateId { get; set; }
     }
 }

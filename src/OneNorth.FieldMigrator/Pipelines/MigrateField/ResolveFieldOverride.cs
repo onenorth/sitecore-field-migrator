@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace OneNorth.FieldMigrator.Pipelines.MigrateField
 {
-    public class CopyFieldOverride
+    public class ResolveFieldOverride
     {
         public Guid SourceFieldId { get; set; }
         public Guid TargetFieldId { get; set; }

@@ -156,6 +156,11 @@ namespace OneNorth.FieldMigrator.Helpers
                 .Where(x => x != null)
                 .ToList();
 
+            version.Path = results.Elements("path").Elements("item")
+                .Select(GetFolder)
+                .Where(x => x != null)
+                .ToList();
+
             // Determine workflow
             var workflowField = version.Fields.FirstOrDefault(x => string.Equals(x.Name, "__Workflow", StringComparison.OrdinalIgnoreCase));
             var workflow = (workflowField != null && !string.IsNullOrEmpty(workflowField.Value))
@@ -186,13 +191,30 @@ namespace OneNorth.FieldMigrator.Helpers
             {
                 Id = Guid.Parse(fieldElement.Attribute("fieldid").Value),
                 Name = fieldElement.Attribute("name").Value,
+                Shared = int.Parse(fieldElement.Attribute("shared").Value) == 1,
                 StandardValue = int.Parse(fieldElement.Attribute("standardvalue").Value) == 1,
                 Type = fieldElement.Attribute("type").Value,
+                Unversioned = int.Parse(fieldElement.Attribute("unversioned").Value) == 1,
                 Value = value,
                 Version = owner
             };
 
             return itemFieldModel;
+        }
+
+        private FolderModel GetFolder(XElement folderElement)
+        {
+            if (folderElement == null || folderElement.Name != "item")
+                return null;
+
+            var folderModel = new FolderModel
+            {
+                DisplayName = folderElement.Attribute("displayname").Value,
+                Id = Guid.Parse(folderElement.Attribute("id").Value),
+                Name = folderElement.Attribute("name").Value
+            };
+
+            return folderModel;
         }
 
         private WorkflowModel GetWorkflow(Guid id)
