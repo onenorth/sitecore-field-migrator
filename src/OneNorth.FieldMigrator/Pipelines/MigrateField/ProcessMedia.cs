@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using OneNorth.FieldMigrator.Helpers;
 using OneNorth.FieldMigrator.Pipelines.MigrateVersion;
 using Sitecore.Data;
@@ -9,6 +10,8 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateField
 {
     public class ProcessMedia : IMigrateFieldPipelineProcessor
     {
+        private static Regex _mediaRegex = new Regex(@"media/([a-f0-9]+)\.ashx", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         private readonly IMigrationHelper _migrationHelper;
 
         public ProcessMedia() : this(MigrationHelper.Instance)
@@ -42,14 +45,18 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateField
                 if (!ID.IsNullOrEmpty(imageField.MediaID))
                     mediaIds.Add(imageField.MediaID);
             }
-
-            // TODO: Rich Text
-
-            var id = mediaIds.FirstOrDefault();
-            if (ID.IsNullOrEmpty(id))
-                return;
-
-            _migrationHelper.MigrateRoot(id.Guid);
+            else if (field.Type == "Rich Text")
+            {
+                var matches = _mediaRegex.Matches(field.Value);
+                foreach(Match match in matches)
+                {
+                    var value = match.Groups[1].Value;
+                    mediaIds.Add(new ID(value));
+                }
+            }
+            
+            foreach(var id in mediaIds)
+                _migrationHelper.MigrateRoot(id.Guid);
         }
     }
 }
