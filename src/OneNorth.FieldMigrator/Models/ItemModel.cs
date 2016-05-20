@@ -18,6 +18,6 @@ namespace OneNorth.FieldMigrator.Models
         
         public List<ItemModel> Children { get; set; } 
 
-        public List<ItemVersionModel> Versions { get; set; }
+        public List<VersionModel> Versions { get; set; }
     }
 }

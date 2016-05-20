@@ -124,22 +124,22 @@ namespace OneNorth.FieldMigrator.Helpers
             return itemModel;
         }
 
-        private ItemVersionModel GetVersion(XElement versionElement, ItemModel owner)
+        private VersionModel GetVersion(XElement versionElement, ItemModel owner)
         {
             if (versionElement == null || versionElement.Name != "version")
                 return null;
 
-            var itemVersionModel = new ItemVersionModel
+            var versionModel = new VersionModel
             {
                 Item = owner,
                 Language = versionElement.Attribute("language").Value,
                 Version = int.Parse(versionElement.Attribute("version").Value)
             };
 
-            return itemVersionModel;
+            return versionModel;
         }
 
-        private void PopulateFields(Guid itemId, ItemVersionModel version)
+        private void PopulateFields(Guid itemId, VersionModel version)
         {
             if (version == null)
                 return;
@@ -179,7 +179,7 @@ namespace OneNorth.FieldMigrator.Helpers
             }
         }
 
-        private ItemFieldModel GetField(XElement fieldElement, ItemVersionModel owner)
+        private FieldModel GetField(XElement fieldElement, VersionModel owner)
         {
             if (fieldElement == null || fieldElement.Name != "field")
                 return null;
@@ -187,7 +187,7 @@ namespace OneNorth.FieldMigrator.Helpers
             var valueElement = fieldElement.Element("value");
             var value = (valueElement != null) ? valueElement.Value : "";
  
-            var itemFieldModel = new ItemFieldModel
+            var fieldModel = new FieldModel
             {
                 Id = Guid.Parse(fieldElement.Attribute("fieldid").Value),
                 Name = fieldElement.Attribute("name").Value,
@@ -199,7 +199,7 @@ namespace OneNorth.FieldMigrator.Helpers
                 Version = owner
             };
 
-            return itemFieldModel;
+            return fieldModel;
         }
 
         private FolderModel GetFolder(XElement folderElement)

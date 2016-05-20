@@ -14,7 +14,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
 
         }
 
-        public MigrateVersionPipelineArgs Run(ItemVersionModel source, Item item)
+        public MigrateVersionPipelineArgs Run(VersionModel source, Item item)
         {
             var args = new MigrateVersionPipelineArgs { Source = source, Item = item };
             CorePipeline.Run("migrateVersion", args, "OneNorth.Migrator");

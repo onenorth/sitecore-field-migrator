@@ -2,7 +2,7 @@
 
 namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
 {
-    public class CheckTemplateInclude
+    public class CheckItemTemplateInclude
     {
         public bool IncludeAllChildren { get; set; }
         public string Name { get; set; }

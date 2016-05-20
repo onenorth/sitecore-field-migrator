@@ -9,6 +9,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateField
     {
         public Field Field { get; set; }
         public Item Item { get; set; }
-        public ItemFieldModel Source { get; set; }
+        public FieldModel Source { get; set; }
     }
 }

@@ -2,9 +2,9 @@
 
 namespace OneNorth.FieldMigrator.Models
 {
-    public class ItemVersionModel
+    public class VersionModel
     {
-        public List<ItemFieldModel> Fields { get; set; }
+        public List<FieldModel> Fields { get; set; }
         public bool HasWorkflow { get; set; }
         public bool InFinalWorkflowState { get; set; }
         public ItemModel Item { get; set; }

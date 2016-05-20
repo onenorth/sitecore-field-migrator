@@ -2,7 +2,7 @@
 
 namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
 {
-    public class CheckTemplateExclude
+    public class CheckItemTemplateExclude
     {
         public string Name { get; set; }
         public Guid TemplateId { get; set; }

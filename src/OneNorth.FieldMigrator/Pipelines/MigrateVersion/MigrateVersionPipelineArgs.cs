@@ -10,6 +10,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
 
         public Item Item { get; set; }
 
-        public ItemVersionModel Source { get; set; }
+        public VersionModel Source { get; set; }
     }
 }

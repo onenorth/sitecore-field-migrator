@@ -5,6 +5,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
 {
     public interface IMigrateVersionPipeline
     {
-        MigrateVersionPipelineArgs Run(ItemVersionModel source, Item item);
+        MigrateVersionPipelineArgs Run(VersionModel source, Item item);
     }
 }

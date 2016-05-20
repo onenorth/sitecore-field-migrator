@@ -2,7 +2,7 @@
 
 namespace OneNorth.FieldMigrator.Models
 {
-    public class ItemFieldModel
+    public class FieldModel
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
@@ -11,6 +11,6 @@ namespace OneNorth.FieldMigrator.Models
         public string Type { get; set; }
         public bool Unversioned { get; set; }
         public string Value { get; set; }
-        public ItemVersionModel Version { get; set; }
+        public VersionModel Version { get; set; }
     }
 }

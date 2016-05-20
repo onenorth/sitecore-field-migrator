@@ -14,7 +14,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateField
 
         }
 
-        public MigrateFieldPipelineArgs Run(ItemFieldModel source, Item item)
+        public MigrateFieldPipelineArgs Run(FieldModel source, Item item)
         {
             var args = new MigrateFieldPipelineArgs { Source = source, Item = item };
             CorePipeline.Run("migrateField", args, "OneNorth.Migrator");

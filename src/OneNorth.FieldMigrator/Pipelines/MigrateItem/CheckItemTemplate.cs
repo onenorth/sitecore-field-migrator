@@ -6,15 +6,15 @@ using Sitecore.Xml;
 
 namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
 {
-    public class CheckTemplate : IMigrateItemPipelineProcessor
+    public class CheckItemTemplate : IMigrateItemPipelineProcessor
     {
         private readonly Guid _mediaLibraryId = new Guid("{3D6658D8-A0BF-4E75-B3E2-D050FABCF4E1}");
 
-        private readonly List<CheckTemplateInclude> _includes = new List<CheckTemplateInclude>();
-        public List<CheckTemplateInclude> Includes { get { return _includes; } }
+        private readonly List<CheckItemTemplateInclude> _includes = new List<CheckItemTemplateInclude>();
+        public List<CheckItemTemplateInclude> Includes { get { return _includes; } }
         protected void AddInclude(XmlNode node)
         {
-            _includes.Add(new CheckTemplateInclude
+            _includes.Add(new CheckItemTemplateInclude
             {
                 Name = XmlUtil.GetAttribute("name", node),
                 SourceTemplateId = Guid.Parse(XmlUtil.GetAttribute("sourceTemplateId", node, "{00000000-0000-0000-0000-000000000000}")),
@@ -22,11 +22,11 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
             });
         }
 
-        private readonly List<CheckTemplateExclude> _excludes = new List<CheckTemplateExclude>();
-        public List<CheckTemplateExclude> Excludes { get { return _excludes; } }
+        private readonly List<CheckItemTemplateExclude> _excludes = new List<CheckItemTemplateExclude>();
+        public List<CheckItemTemplateExclude> Excludes { get { return _excludes; } }
         protected void AddExclude(XmlNode node)
         {
-            _excludes.Add(new CheckTemplateExclude
+            _excludes.Add(new CheckItemTemplateExclude
             {
                 Name = XmlUtil.GetAttribute("name", node),
                 TemplateId = Guid.Parse(XmlUtil.GetAttribute("sourceTemplateId", node, "{00000000-0000-0000-0000-000000000000}"))

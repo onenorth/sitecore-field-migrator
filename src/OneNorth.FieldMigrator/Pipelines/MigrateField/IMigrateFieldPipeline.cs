@@ -5,6 +5,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateField
 {
     public interface IMigrateFieldPipeline
     {
-        MigrateFieldPipelineArgs Run(ItemFieldModel source, Item item);
+        MigrateFieldPipelineArgs Run(FieldModel source, Item item);
     }
 }
