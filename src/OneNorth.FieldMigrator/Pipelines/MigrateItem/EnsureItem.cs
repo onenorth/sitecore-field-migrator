@@ -50,6 +50,13 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
                 return;
 
             var results = _createItemPipeline.Run(source, itemId);
+            if (results.Aborted)
+            {
+                args.AbortPipeline();
+                return;
+            }
+
+            args.CreatedItem = true;
             args.Item = results.Item;
         }
     }

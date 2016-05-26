@@ -41,7 +41,8 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
                 }
 
                 // Create the folder.  This becomes the parent for the next item
-               parent = ItemManager.CreateItem(folderModel.Name, parent, _mediaFolderTemplateId, new ID(folderModel.Id), SecurityCheck.Disable);
+                parent = ItemManager.CreateItem(folderModel.Name, parent, _mediaFolderTemplateId, new ID(folderModel.Id), SecurityCheck.Disable);
+                Sitecore.Diagnostics.Log.Debug(string.Format("[FieldMigrator] Created: {0}", parent.Paths.FullPath), this);
             }
 
             args.Parent = parent;

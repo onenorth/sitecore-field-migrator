@@ -7,6 +7,7 @@ namespace OneNorth.FieldMigrator.Models
     public class ItemModel
     {
         public string Database { get; set; }
+        public string FullPath { get; set; }
         public bool HasChildren { get; set; }
         public Guid Id { get; set; }
         public string Name { get; set; }

@@ -35,7 +35,12 @@ namespace OneNorth.FieldMigrator.Helpers
             _configuration = configuration;
             _workFlows = new ConcurrentDictionary<Guid, WorkflowModel>();
 
-            var binding = new BasicHttpBinding(BasicHttpSecurityMode.None) {MaxReceivedMessageSize = 20000000};
+            var binding = new BasicHttpBinding(BasicHttpSecurityMode.None)
+            {
+                MaxReceivedMessageSize = 524288000, // 500 Megabytes
+                ReceiveTimeout = TimeSpan.FromMinutes(10),
+                SendTimeout = TimeSpan.FromMinutes(10)
+            };
             var remoteAddress = new EndpointAddress(_configuration.SourceEndpointAddress);
             _service = new SitecoreWebService2SoapClient(binding, remoteAddress);
         }
@@ -76,9 +81,6 @@ namespace OneNorth.FieldMigrator.Helpers
                 UserName = _configuration.SourceUserName,
                 Password = _configuration.SourcePassword
             };
-
-            var workflow = GetWorkflow(new Guid("{048E8BB8-1066-484D-B345-BA18264531A2}"));
-            //var workflowResults = _service.GetXML("{048E8BB8-1066-484D-B345-BA18264531A2}", deep, _configuration.SourceDatabase, credentials);
 
             var results = _service.GetXML(id.ToString().ToUpper(), deep, _configuration.SourceDatabase, credentials);
             var itemElement = results.XPathSelectElement("//item");
@@ -160,6 +162,12 @@ namespace OneNorth.FieldMigrator.Helpers
                 .Select(GetFolder)
                 .Where(x => x != null)
                 .ToList();
+
+            if (string.IsNullOrEmpty(version.Item.FullPath))
+            {
+                var fullPath = string.Join("/", version.Path.Select(x => x.Name).Reverse());
+                version.Item.FullPath = "/" + fullPath;
+            }
 
             // Determine workflow
             var workflowField = version.Fields.FirstOrDefault(x => string.Equals(x.Name, "__Workflow", StringComparison.OrdinalIgnoreCase));

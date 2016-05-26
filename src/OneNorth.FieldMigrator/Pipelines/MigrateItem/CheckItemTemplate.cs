@@ -18,7 +18,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
             {
                 Name = XmlUtil.GetAttribute("name", node),
                 SourceTemplateId = Guid.Parse(XmlUtil.GetAttribute("sourceTemplateId", node, "{00000000-0000-0000-0000-000000000000}")),
-                IncludeAllChildren = bool.Parse(XmlUtil.GetAttribute("includeAllChildren", node, "false")),
+                IncludeAllDescendants = bool.Parse(XmlUtil.GetAttribute("includeAllDescendants", node, "false")),
             });
         }
 
@@ -61,7 +61,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
                 .Where(x => x != null);
 
             // If template not registered in config, skip; unless parent template indicates to include all children.
-            if (templateConfiguration == null && !parentTemplateConfigurations.Any(x => x.IncludeAllChildren))
+            if (templateConfiguration == null && !parentTemplateConfigurations.Any(x => x.IncludeAllDescendants))
                 args.AbortPipeline();
         }
     }

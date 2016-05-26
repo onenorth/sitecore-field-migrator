@@ -18,6 +18,11 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
         {
             var args = new CreateItemPipelineArgs { Source = source, ItemId = itemId };
             CorePipeline.Run("createItem", args, "OneNorth.Migrator");
+
+            if (args.Aborted || args.Item == null)
+                Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] Could not create: {0}", source.FullPath), this);
+            else
+                Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Created: {0}", args.Item.Paths.FullPath), this);
             return args;
         }
     }

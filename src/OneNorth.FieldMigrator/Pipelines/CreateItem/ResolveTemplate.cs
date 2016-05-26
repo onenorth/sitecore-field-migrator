@@ -34,9 +34,14 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
 
             var template = Sitecore.Context.Database.GetTemplate(new ID(templateId));
             if (template == null)
-                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] Could not find the template with id {0} for {1}",
-                    templateId.ToString().ToUpper(),
-                    source.Id.ToString().ToUpper()), this);
+            {
+                Sitecore.Diagnostics.Log.Error(
+                    string.Format("[FieldMigrator] Could not find the template with id {0} for {1}",
+                        templateId.ToString().ToUpper(),
+                        source.FullPath), this);
+                args.AbortPipeline();
+                return;
+            }
 
             args.Template = template;
         }
