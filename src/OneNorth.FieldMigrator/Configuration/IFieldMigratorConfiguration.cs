@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace OneNorth.FieldMigrator.Configuration
 {
@@ -11,6 +12,7 @@ namespace OneNorth.FieldMigrator.Configuration
         string TargetDatabase { get; }
         string TargetUserName { get; }
 
+        List<Guid> MediaItemTemplateIds { get; }
         List<IRootConfiguration> Roots { get; }
     }
 }

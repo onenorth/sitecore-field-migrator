@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace OneNorth.FieldMigrator
 {
@@ -14,6 +15,13 @@ namespace OneNorth.FieldMigrator
                 yield return parent;
                 parent = parentSelector(parent);
             }
+        }
+
+        public static string FullPath<T>(this T source, Func<T, T> parentSelector, Func<T, string> nameSelector)
+        {
+            var parents = source.Parents(parentSelector);
+
+            return string.Join("/", parents.Select(nameSelector)) + "/" + nameSelector(source);
         }
 
         public static IEnumerable<T> Flatten<T>(this T source, Func<T, IEnumerable<T>> childrenSelector)

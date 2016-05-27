@@ -51,7 +51,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
             // If configured to include media, allow all media through
             if (IncludeMedia)
             {
-                if (source.Versions.Any(v => v.Path.Any(f => f.Id == _mediaLibraryId)))
+                if (source.IsMediaItem)
                     return;
             }
 

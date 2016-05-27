@@ -34,6 +34,12 @@ namespace OneNorth.FieldMigrator.Configuration
         public string TargetDatabase { get; set; }
         public string TargetUserName { get; set; }
 
+        private readonly List<Guid> _mediaItemTemplateIds = new List<Guid>();
+        public List<Guid> MediaItemTemplateIds { get { return _mediaItemTemplateIds; } }
+        protected void AddMediaItemTemplateId(string value)
+        {
+            _mediaItemTemplateIds.Add(Guid.Parse(value));
+        }
 
         private readonly List<IRootConfiguration> _roots = new List<IRootConfiguration>();
         public List<IRootConfiguration> Roots { get { return _roots; } }

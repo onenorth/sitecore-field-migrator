@@ -23,6 +23,7 @@ namespace OneNorth.FieldMigrator.Helpers
 
         private readonly IFieldMigratorConfiguration _configuration;
         private readonly SitecoreWebService2SoapClient _service;
+        private readonly ConcurrentDictionary<Guid, List<FieldModel>> _templateFields;
         private readonly ConcurrentDictionary<Guid, WorkflowModel> _workFlows;
 
         private HardRockWebServiceProxy() : this(FieldMigratorConfiguration.Instance)
@@ -33,6 +34,7 @@ namespace OneNorth.FieldMigrator.Helpers
         internal HardRockWebServiceProxy(IFieldMigratorConfiguration configuration)
         {
             _configuration = configuration;
+            _templateFields = new ConcurrentDictionary<Guid, List<FieldModel>>();
             _workFlows = new ConcurrentDictionary<Guid, WorkflowModel>();
 
             var binding = new BasicHttpBinding(BasicHttpSecurityMode.None)
@@ -82,6 +84,7 @@ namespace OneNorth.FieldMigrator.Helpers
                 Password = _configuration.SourcePassword
             };
 
+            Sitecore.Diagnostics.Log.Debug(string.Format("[FieldMigrator] GetItem id:{0} deep:{1}", id, true), this);
             var results = _service.GetXML(id.ToString().ToUpper(), deep, _configuration.SourceDatabase, credentials);
             var itemElement = results.XPathSelectElement("//item");
             if (itemElement == null)
@@ -106,18 +109,13 @@ namespace OneNorth.FieldMigrator.Helpers
                 TemplateName = itemElement.Attribute("template").Value
             };
 
-            // Gather the latest versions
-            var childVersionElements = itemElement.Elements("version");
-            itemModel.Versions = childVersionElements.Select(x => GetVersion(x, itemModel))
-                .OrderBy(x => x.Language)
-                .ThenByDescending(x => x.Version)
-                .GroupBy(x => x.Language)
-                .Select(x => x.First())
-                .ToList();
+            // Determine if is MediaItem based on configured template ids.
+            if (_configuration.MediaItemTemplateIds.Contains(itemModel.TemplateId))
+                itemModel.IsMediaItem = true;
 
-            // Populate the fields
-            foreach(var version in itemModel.Versions)
-                PopulateFields(itemModel.Id, version);
+            // Gather the versions
+            var versionElements = itemElement.Elements("version");
+            itemModel.Versions = versionElements.Select(x => GetVersion(x, itemModel)).ToList();
 
             // Gather the children
             var childItemElements = itemElement.Elements("item");
@@ -138,39 +136,43 @@ namespace OneNorth.FieldMigrator.Helpers
                 Version = int.Parse(versionElement.Attribute("version").Value)
             };
 
+            // Get all fields
+            versionModel.Fields = GetTemplateFields(owner.TemplateId, owner.Id, versionModel.Language, versionModel.Version);
+
+            // Populate the field values
+            PopulateFieldValues(versionModel, versionElement);
+
             return versionModel;
         }
 
-        private void PopulateFields(Guid itemId, VersionModel version)
+        private void PopulateFieldValues(VersionModel version, XElement versionElement)
         {
-            if (version == null)
+            if (version == null || version.Fields == null || versionElement == null || versionElement.Name != "version")
                 return;
 
-            var credentials = new Credentials
+            var fields = version.Fields;
+
+            // Set the Version on the fields
+            foreach (var field in fields)
             {
-                UserName = _configuration.SourceUserName,
-                Password = _configuration.SourcePassword
-            };
+                field.Version = version;
+            }
 
-            var results = _service.GetItemFields(itemId.ToString().ToUpper(), version.Language, version.Version.ToString(), true, _configuration.SourceDatabase, credentials);
-            version.Fields = results.Descendants("field")
-                .Select(x => GetField(x, version))
-                .Where(x => x != null)
-                .ToList();
-
-            version.Path = results.Elements("path").Elements("item")
-                .Select(GetFolder)
-                .Where(x => x != null)
-                .ToList();
-
-            if (string.IsNullOrEmpty(version.Item.FullPath))
+            // Populate known field values
+            var fieldElements = versionElement.Descendants("field");
+            foreach (var fieldElement in fieldElements)
             {
-                var fullPath = string.Join("/", version.Path.Select(x => x.Name).Reverse());
-                version.Item.FullPath = "/" + fullPath;
+                var content = fieldElement.Element("content");
+                var value = (content != null) ? content.Value : "";
+
+                var fieldId = Guid.Parse(fieldElement.Attribute("tfid").Value);
+                var field = fields.FirstOrDefault(x => x.Id == fieldId);
+                if (field != null)
+                    field.Value = value;
             }
 
             // Determine workflow
-            var workflowField = version.Fields.FirstOrDefault(x => string.Equals(x.Name, "__Workflow", StringComparison.OrdinalIgnoreCase));
+            var workflowField = fields.FirstOrDefault(x => string.Equals(x.Name, "__Workflow", StringComparison.OrdinalIgnoreCase));
             var workflow = (workflowField != null && !string.IsNullOrEmpty(workflowField.Value))
                 ? GetWorkflow(new Guid(workflowField.Value))
                 : null;
@@ -179,7 +181,7 @@ namespace OneNorth.FieldMigrator.Helpers
             {
                 version.HasWorkflow = true;
 
-                var workflowStateField = version.Fields.FirstOrDefault(x => string.Equals(x.Name, "__Workflow state", StringComparison.OrdinalIgnoreCase));
+                var workflowStateField = fields.FirstOrDefault(x => string.Equals(x.Name, "__Workflow state", StringComparison.OrdinalIgnoreCase));
                 var workflowState = (workflowStateField != null && !string.IsNullOrEmpty(workflowStateField.Value))
                     ? new Guid(workflowStateField.Value)
                     : Guid.Empty;
@@ -187,42 +189,47 @@ namespace OneNorth.FieldMigrator.Helpers
             }
         }
 
-        private FieldModel GetField(XElement fieldElement, VersionModel owner)
+        private List<FieldModel> GetTemplateFields(Guid templateId, Guid itemId, string language, int version)
+        {
+            var fields = _templateFields.GetOrAdd(templateId, key => GetTemplateFieldsFactory(key, itemId, language, version));
+            return fields.Select(x => x.Clone()).ToList();
+        }
+
+        private List<FieldModel> GetTemplateFieldsFactory(Guid templateId, Guid itemId, string language, int version)
+        {
+            var credentials = new Credentials
+            {
+                UserName = _configuration.SourceUserName,
+                Password = _configuration.SourcePassword
+            };
+
+            Sitecore.Diagnostics.Log.Debug(string.Format("[FieldMigrator] GetTemplateFieldsFactory templateid:{0}", templateId), this);
+            var results = _service.GetItemFields(itemId.ToString().ToUpper(), language, version.ToString(), true, _configuration.SourceDatabase, credentials);
+            var fields = results.Descendants("field")
+                .Select(GetTemplateField)
+                .Where(x => x != null)
+                .OrderBy(x => x.Name)
+                .ToList();
+
+            return fields;
+        }
+
+        private FieldModel GetTemplateField(XElement fieldElement)
         {
             if (fieldElement == null || fieldElement.Name != "field")
                 return null;
 
-            var valueElement = fieldElement.Element("value");
-            var value = (valueElement != null) ? valueElement.Value : "";
- 
             var fieldModel = new FieldModel
             {
                 Id = Guid.Parse(fieldElement.Attribute("fieldid").Value),
                 Name = fieldElement.Attribute("name").Value,
                 Shared = int.Parse(fieldElement.Attribute("shared").Value) == 1,
-                StandardValue = int.Parse(fieldElement.Attribute("standardvalue").Value) == 1,
                 Type = fieldElement.Attribute("type").Value,
                 Unversioned = int.Parse(fieldElement.Attribute("unversioned").Value) == 1,
-                Value = value,
-                Version = owner
+                Value = null
             };
 
             return fieldModel;
-        }
-
-        private FolderModel GetFolder(XElement folderElement)
-        {
-            if (folderElement == null || folderElement.Name != "item")
-                return null;
-
-            var folderModel = new FolderModel
-            {
-                DisplayName = folderElement.Attribute("displayname").Value,
-                Id = Guid.Parse(folderElement.Attribute("id").Value),
-                Name = folderElement.Attribute("name").Value
-            };
-
-            return folderModel;
         }
 
         private WorkflowModel GetWorkflow(Guid id)
@@ -238,6 +245,7 @@ namespace OneNorth.FieldMigrator.Helpers
                 Password = _configuration.SourcePassword
             };
 
+            Sitecore.Diagnostics.Log.Debug(string.Format("[FieldMigrator] GetWorkflowFactory id:{0}", id), this);
             var results = _service.GetXML(id.ToString().ToUpper(), true, _configuration.SourceDatabase, credentials);
 
             var stateItemElement = results.Descendants("item")
@@ -252,6 +260,38 @@ namespace OneNorth.FieldMigrator.Helpers
             };
 
             return workflowModel;
+        }
+
+        public List<FolderModel> GetFullPath(Guid itemId, string language, int version)
+        {
+            var credentials = new Credentials
+            {
+                UserName = _configuration.SourceUserName,
+                Password = _configuration.SourcePassword
+            };
+
+            var results = _service.GetItemFields(itemId.ToString().ToUpper(), language, version.ToString(), true, _configuration.SourceDatabase, credentials);
+            var path = results.Elements("path").Elements("item")
+                .Select(GetFolder)
+                .Where(x => x != null)
+                .ToList();
+
+            return path;
+        }
+
+        private FolderModel GetFolder(XElement folderElement)
+        {
+            if (folderElement == null || folderElement.Name != "item")
+                return null;
+
+            var folderModel = new FolderModel
+            {
+                DisplayName = folderElement.Attribute("displayname").Value,
+                Id = Guid.Parse(folderElement.Attribute("id").Value),
+                Name = folderElement.Attribute("name").Value
+            };
+
+            return folderModel;
         }
     }
 }

@@ -43,7 +43,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
             var mediaItem = new MediaItem(item);
             var media = MediaManager.GetMedia(mediaItem);
 
-            if (blobField.StandardValue)
+            if (blobField.Value == null)
                 media.ReleaseStream();
             else
             {

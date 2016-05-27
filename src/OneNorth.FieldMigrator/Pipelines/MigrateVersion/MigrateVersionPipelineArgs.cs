@@ -6,8 +6,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
 {
     public class MigrateVersionPipelineArgs : PipelineArgs
     {
-        public EditContext EditContext { get; set; }
-
         public Item Item { get; set; }
 
         public VersionModel Source { get; set; }

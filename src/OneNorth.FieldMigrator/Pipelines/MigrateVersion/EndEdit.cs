@@ -2,14 +2,14 @@
 {
     public class EndEdit : IMigrateVersionPipelineProcessor
     {
+        public bool DisableEvents { get; set; }
+
         public virtual void Process(MigrateVersionPipelineArgs args)
         {
-            if (args.EditContext == null)
+            if (args.Item == null)
                 return;
 
-            args.EditContext.Dispose();
-            if (args.EditContext != null)
-                args.EditContext = null;
+            args.Item.Editing.EndEdit(DisableEvents);
         }
     }
 }

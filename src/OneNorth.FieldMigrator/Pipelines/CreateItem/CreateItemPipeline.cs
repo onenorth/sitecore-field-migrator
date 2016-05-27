@@ -20,7 +20,7 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
             CorePipeline.Run("createItem", args, "OneNorth.Migrator");
 
             if (args.Aborted || args.Item == null)
-                Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] Could not create: {0}", source.FullPath), this);
+                Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] Could not create: {0}", source.FullPath(x => x.Parent, x => x.Name)), this);
             else
                 Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Created: {0}", args.Item.Paths.FullPath), this);
             return args;

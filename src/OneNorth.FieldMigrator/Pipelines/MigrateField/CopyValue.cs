@@ -17,7 +17,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateField
             var source = args.Source;
             var field = args.Field;
 
-            if (source.StandardValue)
+            if (source.Value == null)
                 field.Reset();
             else
                 field.Value = source.Value;
