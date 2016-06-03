@@ -39,7 +39,6 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
                     string.Format("[FieldMigrator] Could not find the template with id {0} for {1}",
                         templateId.ToString().ToUpper(),
                         source.FullPath(x => x.Parent, x => x.Name)), this);
-                args.AbortPipeline();
                 return;
             }
 

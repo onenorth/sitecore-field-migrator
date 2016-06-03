@@ -1,6 +1,8 @@
 ﻿
+using System;
 using OneNorth.FieldMigrator.Configuration;
 using OneNorth.FieldMigrator.Helpers;
+using Sitecore.ContentSearch.Maintenance;
 using Sitecore.Data;
 
 namespace OneNorth.FieldMigrator
@@ -34,14 +36,24 @@ namespace OneNorth.FieldMigrator
 
         public void Migrate()
         {
-            var database = Database.GetDatabase(_configuration.TargetDatabase);
-            using (new DatabaseSwitcher(database))
+            try
             {
-                foreach (var root in _configuration.Roots)
+                IndexCustodian.PauseIndexing();
+
+                var database = Database.GetDatabase(_configuration.TargetDatabase);
+                using (new DatabaseSwitcher(database))
                 {
-                    _migrationHelper.MigrateRoot(root.Id);
+                    foreach (var root in _configuration.Roots)
+                    {
+                        _migrationHelper.MigrateRoot(root.Id);
+                    }
                 }
             }
+            finally
+            {
+                IndexCustodian.ResumeIndexing();
+            }
+            
         }
     }
 }

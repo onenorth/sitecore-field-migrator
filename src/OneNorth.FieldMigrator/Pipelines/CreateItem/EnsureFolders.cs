@@ -8,19 +8,20 @@ using Sitecore.SecurityModel;
 
 namespace OneNorth.FieldMigrator.Pipelines.CreateItem
 {
-    public class EnsureFoldersForMedia : ICreateItemPipelineProcessor
+    public class EnsureFolders : ICreateItemPipelineProcessor
     {
+        private readonly ID _folderTemplateId = new ID("{A87A00B1-E6DB-45AB-8B54-636FEC3B5523}");
         private readonly ID _mediaFolderTemplateId = new ID("{FE5DD826-48C6-436D-B87A-7C4210C7413B}");
         private readonly Guid _mediaLibraryId = new Guid("{3D6658D8-A0BF-4E75-B3E2-D050FABCF4E1}");
 
         private readonly IHardRockWebServiceProxy _hardRockWebServiceProxy;
 
-        public EnsureFoldersForMedia() : this(HardRockWebServiceProxy.Instance)
+        public EnsureFolders() : this(HardRockWebServiceProxy.Instance)
         {
             
         }
 
-        internal EnsureFoldersForMedia(IHardRockWebServiceProxy hardRockWebServiceProxy)
+        internal EnsureFolders(IHardRockWebServiceProxy hardRockWebServiceProxy)
         {
             _hardRockWebServiceProxy = hardRockWebServiceProxy;
         }
@@ -28,14 +29,11 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
         public virtual void Process(CreateItemPipelineArgs args)
         {
             if (args.Source == null ||
-                args.Parent != null)
+                args.Parent != null ||
+                args.Template == null)
                 return;
 
             var source = args.Source;
-
-            // Only process media items.  These are children of the Media Library
-            if (!source.IsMediaItem)
-                return;
 
             // Determine if the parent already exists.  If it does, there is nothing to do.
             args.Parent = Sitecore.Context.Database.GetItem(new ID(source.ParentId));
@@ -47,21 +45,35 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
             // Work backwards ensuring folders exist, skipping the current item
             var firstVersion = source.Versions.First();
             var path = _hardRockWebServiceProxy.GetFullPath(source.Id, firstVersion.Language, firstVersion.Version);
+
+            // Get folder type based on location
+            var folderTemplateId = (path.Any(f => f.Id == _mediaLibraryId)) ? _mediaFolderTemplateId : _folderTemplateId;
+
+            // Find first ancestor that exists
             var count = path.Count;
-            for (var i = count - 1; i > 0; i--)
+            var index = 2; //Skip the first 2 (self and parent)
+            while (index < count)
             {
-                // If the folder already exists, skip it, moving onto the next.
-                var folderModel = path[i];
-                var folder = Sitecore.Context.Database.GetItem(new ID(folderModel.Id));
-                if (folder != null)
-                {
-                    parent = folder;
-                    continue;
-                }
+                parent = Sitecore.Context.Database.GetItem(new ID(path[index].Id));
+                if (parent != null)
+                    break;
+
+                index++;
+            }
+
+            // Move to the first missing parent
+            index--;
+
+            // Create the parents, furthest to closest
+            while (index > 0)
+            {
+                var folder = path[index];
 
                 // Create the folder.  This becomes the parent for the next item
-                parent = ItemManager.CreateItem(folderModel.Name, parent, _mediaFolderTemplateId, new ID(folderModel.Id), SecurityCheck.Disable);
+                parent = ItemManager.CreateItem(folder.Name, parent, folderTemplateId, new ID(folder.Id), SecurityCheck.Disable);
                 Sitecore.Diagnostics.Log.Debug(string.Format("[FieldMigrator] Created: {0}", parent.Paths.FullPath), this);
+
+                index--;
             }
 
             args.Parent = parent;

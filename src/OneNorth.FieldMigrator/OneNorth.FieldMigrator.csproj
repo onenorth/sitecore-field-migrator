@@ -48,6 +48,9 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Sitecore.ContentSearch">
+      <HintPath>C:\inetpub\wwwroot\Sitecore81u2\Website\bin\Sitecore.ContentSearch.dll</HintPath>
+    </Reference>
     <Reference Include="Sitecore.Kernel">
       <HintPath>C:\inetpub\wwwroot\Sitecore81\Website\bin\Sitecore.Kernel.dll</HintPath>
     </Reference>
@@ -191,7 +194,7 @@
     <Compile Include="Models\WorkflowModel.cs" />
     <Compile Include="Pipelines\CreateItem\CreateItemPipeline.cs" />
     <Compile Include="Pipelines\CreateItem\CreateItemPipelineArgs.cs" />
-    <Compile Include="Pipelines\CreateItem\EnsureFoldersForMedia.cs" />
+    <Compile Include="Pipelines\CreateItem\EnsureFolders.cs" />
     <Compile Include="Pipelines\CreateItem\ICreateItemPipeline.cs" />
     <Compile Include="Pipelines\CreateItem\ICreateItemPipelineProcessor.cs" />
     <Compile Include="Pipelines\MigrateField\ProcessMedia.cs" />
