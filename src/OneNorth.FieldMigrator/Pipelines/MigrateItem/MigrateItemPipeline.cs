@@ -18,7 +18,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
             var args = new MigrateItemPipelineArgs { Source = source };
             CorePipeline.Run("migrateItem", args, "OneNorth.Migrator");
             if (args.Aborted || args.Item == null)
-                Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] Unable to migrate: {0}", source.FullPath(x => x.Parent, x => x.Name)), this);
+                Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] Unable to migrate: {0}", source.Name), this);
             else if (args.Item != null)
                 Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Migrated: {0}", args.Item.Paths.FullPath), this);
 

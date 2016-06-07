@@ -33,20 +33,12 @@ namespace OneNorth.FieldMigrator.Helpers
 
         public void MigrateRoot(Guid itemId)
         {
-            Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] GetItem from source started: {0}", itemId), this);
-            var sourceItem = _hardRockWebServiceProxy.GetItem(itemId, true);
-            Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] GetItem from source finished: {0}", itemId), this);
-            MigrateRoot(sourceItem);
+            _hardRockWebServiceProxy.TraverseTree(itemId, TraverseTreeItemAction);
         }
 
-        private void MigrateRoot(ItemModel sourceItem)
+        private void TraverseTreeItemAction(ItemModel itemModel)
         {
-            //MigrateItem(sourceItem);
-            _migrateItemPipeline.Run(sourceItem);
-            foreach (var child in sourceItem.Children)
-            {
-                MigrateRoot(child);
-            }
+            _migrateItemPipeline.Run(itemModel);
         }
     }
 }

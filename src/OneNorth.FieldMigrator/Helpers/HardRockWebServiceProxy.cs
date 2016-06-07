@@ -47,6 +47,33 @@ namespace OneNorth.FieldMigrator.Helpers
             _service = new SitecoreWebService2SoapClient(binding, remoteAddress);
         }
 
+        public void TraverseTree(Guid rootId, Action<ItemModel> itemAction, FolderModel[] relativePath = null, bool? hasChildren = null)
+        {
+            var itemModel = GetItem(rootId, false);
+            itemModel.RelativePath = relativePath;
+            itemAction(itemModel);
+
+            if (hasChildren.HasValue && !hasChildren.Value)
+                return;
+
+            var pathList = new List<FolderModel> {
+                new FolderModel {
+                    Id = itemModel.Id,
+                    Name = itemModel.Name,
+                    TemplateId = itemModel.TemplateId
+                }
+            };
+            if (relativePath != null)
+                pathList.AddRange(relativePath);
+            var pathArray = pathList.ToArray();
+
+            var children = GetChildren(rootId);
+            foreach (var child in children)
+            {
+                TraverseTree(child.Id, itemAction, pathArray, child.HasChildren);
+            }
+        }
+
         public IEnumerable<ChildModel> GetChildren(Guid parentId)
         {
             var credentials = new Credentials
@@ -84,8 +111,10 @@ namespace OneNorth.FieldMigrator.Helpers
                 Password = _configuration.SourcePassword
             };
 
-            Sitecore.Diagnostics.Log.Debug(string.Format("[FieldMigrator] GetItem id:{0} deep:{1}", id, true), this);
+            Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] GetXML id:{0} deep:{1}", id, deep), this);
             var results = _service.GetXML(id.ToString().ToUpper(), deep, _configuration.SourceDatabase, credentials);
+            Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] GetXML id:{0} deep:{1} finished", id, deep), this);
+
             var itemElement = results.XPathSelectElement("//item");
             if (itemElement == null)
                 return null;
@@ -102,7 +131,6 @@ namespace OneNorth.FieldMigrator.Helpers
             {
                 Id = Guid.Parse(itemElement.Attribute("id").Value),
                 Name = itemElement.Attribute("name").Value,
-                Parent = parent,
                 ParentId = Guid.Parse(itemElement.Attribute("parentid").Value),
                 SortOrder = int.Parse(itemElement.Attribute("sortorder").Value),
                 TemplateId = Guid.Parse(itemElement.Attribute("tid").Value),
@@ -116,10 +144,6 @@ namespace OneNorth.FieldMigrator.Helpers
             // Gather the versions
             var versionElements = itemElement.Elements("version");
             itemModel.Versions = versionElements.Select(x => GetVersion(x, itemModel)).ToList();
-
-            // Gather the children
-            var childItemElements = itemElement.Elements("item");
-            itemModel.Children = childItemElements.Select(x => GetItem(x, itemModel)).ToList();
 
             return itemModel;
         }

@@ -36,9 +36,10 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
             if (parent == null)
             {
                 Sitecore.Diagnostics.Log.Error(
-                    string.Format("[FieldMigrator] Could not find the parent with id {0} for {1}",
+                    string.Format("[FieldMigrator] Could not find the parent with id {0} for {1} ({2})",
                         source.ParentId.ToString().ToUpper(),
-                        source.FullPath(x => x.Parent, x => x.Name)), this);
+                        source.Name,
+                        source.Id), this);
                 return;
             }
 

@@ -55,14 +55,24 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
                     return;
             }
 
+            // If template is registered, we can process.
             var templateConfiguration = Includes.FirstOrDefault(x => x.SourceTemplateId == source.TemplateId);
-            var parentTemplateConfigurations = source.Parents(x => x.Parent)
-                .Select(parent => Includes.FirstOrDefault(x => x.SourceTemplateId == parent.TemplateId))
-                .Where(x => x != null);
+            if (templateConfiguration != null)
+                return;
 
-            // If template not registered in config, skip; unless parent template indicates to include all children.
-            if (templateConfiguration == null && !parentTemplateConfigurations.Any(x => x.IncludeAllDescendants))
-                args.AbortPipeline();
+            // Check to see if a parent template is set to include all children.
+            if (source.RelativePath != null)
+            {
+                var parentTemplateConfigurations = source.RelativePath
+                 .Select(parent => Includes.FirstOrDefault(x => x.SourceTemplateId == parent.TemplateId))
+                 .Where(x => x != null);
+
+                if (parentTemplateConfigurations.Any(x => x.IncludeAllDescendants))
+                    return;
+            }
+            
+            // Skip
+            args.AbortPipeline();
         }
     }
 }

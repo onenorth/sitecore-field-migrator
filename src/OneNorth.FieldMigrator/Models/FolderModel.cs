@@ -7,5 +7,6 @@ namespace OneNorth.FieldMigrator.Models
         public string DisplayName { get; set; }
         public Guid Id { get; set; }
         public string Name { get; set; }
+        public Guid TemplateId { get; set; }
     }
 }
