@@ -59,7 +59,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
                 else if (latestVersion != null)
                 {
                     versionModels.Add(latestVersion);
-                    Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Approved version could not be found, taking latest for {0}", args.Source.AsRelativePathString()), this);
+                    Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Approved version not found: {0}, {1}, {2}", args.Source.Id, latestVersion.Language, args.Source.AsRelativePathString()), this);
                 }
             }
 
