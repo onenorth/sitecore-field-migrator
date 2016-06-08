@@ -26,6 +26,8 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
             _hardRockWebServiceProxy = hardRockWebServiceProxy;
         }
 
+        public string DefaultLanguage { get; set; }
+
         public virtual void Process(CreateItemPipelineArgs args)
         {
             if (args.Source == null ||
@@ -71,6 +73,29 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
 
                 // Create the folder.  This becomes the parent for the next item
                 parent = ItemManager.CreateItem(folder.Name, parent, folderTemplateId, new ID(folder.Id), SecurityCheck.Disable);
+                
+                // Add at least 1 version
+                if (!string.IsNullOrEmpty(DefaultLanguage))
+                {
+                    var language = LanguageManager.GetLanguage(DefaultLanguage);
+                    parent = (parent.Language == language) ? parent : parent.Database.GetItem(parent.ID, language);
+
+                    // Create version if it does not exist
+                    if (parent.Versions.Count == 0)
+                    {
+                        var disableFiltering = Sitecore.Context.Site.DisableFiltering;
+                        try
+                        {
+                            Sitecore.Context.Site.DisableFiltering = true;
+                            parent = parent.Versions.AddVersion();
+                        }
+                        finally
+                        {
+                            Sitecore.Context.Site.DisableFiltering = disableFiltering;
+                        }
+                    }
+                }
+
                 Sitecore.Diagnostics.Log.Debug(string.Format("[FieldMigrator] Created: {0}", parent.Paths.FullPath), this);
 
                 index--;

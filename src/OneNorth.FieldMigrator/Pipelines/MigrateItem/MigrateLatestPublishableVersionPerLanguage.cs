@@ -35,38 +35,32 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
             var versionModels = new List<VersionModel>();
             foreach (var language in languages)
             {
-                VersionModel firstApproved = null;
+                VersionModel latestVersion = null;
+                VersionModel latestApproved = null;
                 VersionModel firstPublishable = null;
 
                 // Find latest version that is publishable and is approved
                 foreach (var version in language)
                 {
+                    if (latestVersion == null)
+                        latestVersion = version;
+
                     if (version.HasWorkflow && !version.InFinalWorkflowState)
                         continue;
 
-                    if (firstApproved == null)
-                        firstApproved = version;
-
-                    if (version.Fields.First(x => x.Name == "__Hide version").Value == "1")
-                        continue;
-
-                    var validFrom = version.Fields.First(x => x.Name == "__Valid from").Value;
-                    if (!string.IsNullOrEmpty(validFrom) && Sitecore.DateUtil.ParseDateTime(validFrom, DateTime.MinValue) > DateTime.Now)
-                        continue;
-
-                    var validTo = version.Fields.First(x => x.Name == "__Valid to").Value;
-                    if (!string.IsNullOrEmpty(validFrom) && Sitecore.DateUtil.ParseDateTime(validTo, DateTime.MaxValue) < DateTime.Now)
-                        continue;
-
-                    firstPublishable = version;
+                    latestApproved = version;
+                    
                     break;
                 }
-
-                // If there is no publishable items, that may be because they were switched to non publishable after the fact, in that case take the last approved version.
-                if (firstPublishable != null)
-                    versionModels.Add(firstPublishable);
-                else if (firstApproved != null)
-                    versionModels.Add(firstApproved);
+                
+                // Take the latest approved version.  If there is no approved version take the latest version.
+                if (latestApproved != null)
+                    versionModels.Add(latestApproved);
+                else if (latestVersion != null)
+                {
+                    versionModels.Add(latestVersion);
+                    Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Approved version could not be found, taking latest for {0}", args.Source.AsRelativePathString()), this);
+                }
             }
 
             // Update each version

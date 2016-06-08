@@ -17,6 +17,11 @@ namespace OneNorth.FieldMigrator
             }
         }
 
+        public static string AsPathString<T>(this IEnumerable<T> source, Func<T, string> nameSelector)
+        {
+            return string.Join("/", source.Select(nameSelector));
+        }
+
         public static string FullPath<T>(this T source, Func<T, T> parentSelector, Func<T, string> nameSelector)
         {
             var parents = source.Parents(parentSelector);

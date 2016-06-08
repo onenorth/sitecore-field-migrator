@@ -75,7 +75,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
-    <Content Include="App_Config\Include\OneNorth.FieldMigrator.config">
+    <Content Include="App_Config\Include\z.OneNorth.FieldMigrator.config">
       <SubType>Designer</SubType>
     </Content>
     <Content Include="Properties\DataSources\System.Xml.Linq.XElement.datasource" />
@@ -185,6 +185,7 @@
     <Compile Include="Helpers\HardRockWebServiceProxy.cs" />
     <Compile Include="Helpers\MigrationHelper.cs" />
     <Compile Include="IMigrator.cs" />
+    <Compile Include="ItemModelExtensions.cs" />
     <Compile Include="Migrator.cs" />
     <Compile Include="Models\ChildModel.cs" />
     <Compile Include="Models\FieldModel.cs" />
