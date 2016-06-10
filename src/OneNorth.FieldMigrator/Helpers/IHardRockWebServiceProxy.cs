@@ -6,9 +6,9 @@ namespace OneNorth.FieldMigrator.Helpers
 {
     public interface IHardRockWebServiceProxy
     {
-        IEnumerable<ChildModel> GetChildren(Guid parentId);
+        byte[] MediaDownloadAttachment(Guid mediaItemId);
         List<FolderModel> GetFullPath(Guid itemId, string language, int version);
-        ItemModel GetItem(Guid id, bool deep = true);
-        void TraverseTree(Guid rootId, Action<ItemModel> itemAction, FolderModel[] relativePath = null, bool? hasChildren = null);
+        void SetContextLanguage(string languageName);
+        void TraverseTree(Guid rootId, Action<ItemModel> itemAction);
     }
 }

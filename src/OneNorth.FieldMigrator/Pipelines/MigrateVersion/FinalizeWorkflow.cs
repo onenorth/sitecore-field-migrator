@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using OneNorth.FieldMigrator.Models;
 
 namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
 {
@@ -13,7 +14,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
             var source = args.Source;
             var item = args.Item;
 
-            if (!source.HasWorkflow || (source.HasWorkflow && source.InFinalWorkflowState))
+            if (!(source.HasWorkflow && source.WorkflowState == WorkflowState.NonFinal))
             {
                 var workflow = item.Database.WorkflowProvider.GetWorkflow(item);
                 if (workflow != null)

@@ -47,34 +47,55 @@ namespace OneNorth.FieldMigrator.Helpers
             _service = new SitecoreWebService2SoapClient(binding, remoteAddress);
         }
 
-        public void TraverseTree(Guid rootId, Action<ItemModel> itemAction, FolderModel[] relativePath = null, bool? hasChildren = null)
+        public void TraverseTree(Guid rootId, Action<ItemModel> itemAction)
         {
-            var itemModel = GetItem(rootId, false);
-            itemModel.RelativePath = relativePath;
-            itemAction(itemModel);
-
-            if (hasChildren.HasValue && !hasChildren.Value)
-                return;
-
-            var pathList = new List<FolderModel> {
-                new FolderModel {
-                    Id = itemModel.Id,
-                    Name = itemModel.Name,
-                    TemplateId = itemModel.TemplateId
-                }
-            };
-            if (relativePath != null)
-                pathList.AddRange(relativePath);
-            var pathArray = pathList.ToArray();
-
-            var children = GetChildren(rootId);
-            foreach (var child in children)
+            // Get Root Item Model
+            var itemModel = GetItem(rootId);
+            if (itemModel == null)
             {
-                TraverseTree(child.Id, itemAction, pathArray, child.HasChildren);
+                Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] (TraverseTree) could not find item with id:{0}", rootId), this);
+                return;
+            }
+            var templateInclude = _configuration.TemplateIncludes.FirstOrDefault(x => x.SourceTemplateId == itemModel.TemplateId);
+            var deep = (templateInclude != null && templateInclude.IncludeAllDescendants);
+            if (deep)
+                itemModel = GetItem(rootId, deep:true);
+
+            // Process Root
+            RunItemActions(itemModel, itemAction);
+
+            // Process Children if needed
+            if (!deep)
+                TraverseChildren(itemModel, itemAction);
+        }
+
+        private void RunItemActions(ItemModel itemModel, Action<ItemModel> itemAction)
+        {
+            itemAction(itemModel);
+            if (itemModel.Children != null)
+            {
+                foreach (var child in itemModel.Children)
+                {
+                    RunItemActions(child, itemAction);
+                }
             }
         }
 
-        public IEnumerable<ChildModel> GetChildren(Guid parentId)
+        private void TraverseChildren(ItemModel parent, Action<ItemModel> itemAction)
+        {
+            var children = GetChildren(parent.Id);
+            foreach (var child in children)
+            {
+                var templateInclude = _configuration.TemplateIncludes.FirstOrDefault(x => x.SourceTemplateId == child.TemplateId);
+                var deep = (templateInclude != null && templateInclude.IncludeAllDescendants);
+                var itemModel = GetItem(child.Id, parent, deep);
+                RunItemActions(itemModel, itemAction);
+                if (!deep && child.HasChildren)
+                    TraverseChildren(itemModel, itemAction);
+            }
+        }
+
+        private IEnumerable<ChildModel> GetChildren(Guid parentId)
         {
             var credentials = new Credentials
             {
@@ -103,7 +124,7 @@ namespace OneNorth.FieldMigrator.Helpers
             return children;
         }
 
-        public ItemModel GetItem(Guid id, bool deep = true)
+        private ItemModel GetItem(Guid id, ItemModel parent = null, bool deep = false)
         {
             var credentials = new Credentials
             {
@@ -119,10 +140,10 @@ namespace OneNorth.FieldMigrator.Helpers
             if (itemElement == null)
                 return null;
 
-            return GetItem(itemElement);
+            return GetItem(itemElement, parent, deep);
         }
 
-        private ItemModel GetItem(XElement itemElement, ItemModel parent = null)
+        private ItemModel GetItem(XElement itemElement, ItemModel parent, bool deep)
         {
             if (itemElement == null || itemElement.Name != "item")
                 return null;
@@ -131,6 +152,7 @@ namespace OneNorth.FieldMigrator.Helpers
             {
                 Id = Guid.Parse(itemElement.Attribute("id").Value),
                 Name = itemElement.Attribute("name").Value,
+                Parent = parent,
                 ParentId = Guid.Parse(itemElement.Attribute("parentid").Value),
                 SortOrder = int.Parse(itemElement.Attribute("sortorder").Value),
                 TemplateId = Guid.Parse(itemElement.Attribute("tid").Value),
@@ -144,6 +166,13 @@ namespace OneNorth.FieldMigrator.Helpers
             // Gather the versions
             var versionElements = itemElement.Elements("version");
             itemModel.Versions = versionElements.Select(x => GetVersion(x, itemModel)).ToList();
+
+            // Gather the children
+            if (deep)
+            {
+                var childItemElements = itemElement.Elements("item");
+                itemModel.Children = childItemElements.Select(x => GetItem(x, itemModel, deep)).ToList();
+            }
 
             return itemModel;
         }
@@ -201,6 +230,9 @@ namespace OneNorth.FieldMigrator.Helpers
                 ? GetWorkflow(new Guid(workflowField.Value))
                 : null;
 
+            version.HasWorkflow = false;
+            version.WorkflowState = WorkflowState.Empty;
+
             if (workflow != null)
             {
                 version.HasWorkflow = true;
@@ -209,7 +241,8 @@ namespace OneNorth.FieldMigrator.Helpers
                 var workflowState = (workflowStateField != null && !string.IsNullOrEmpty(workflowStateField.Value))
                     ? new Guid(workflowStateField.Value)
                     : Guid.Empty;
-                version.InFinalWorkflowState = workflow.FinalState == workflowState;
+                if (workflowState != Guid.Empty)
+                    version.WorkflowState = (workflow.FinalState == workflowState) ? WorkflowState.Final : WorkflowState.NonFinal;
             }
         }
 
@@ -316,6 +349,46 @@ namespace OneNorth.FieldMigrator.Helpers
             };
 
             return folderModel;
+        }
+
+        public byte[] MediaDownloadAttachment(Guid mediaItemId)
+        {
+            var credentials = new Credentials
+            {
+                UserName = _configuration.SourceUserName,
+                Password = _configuration.SourcePassword
+            };
+
+            var parameters = new ArrayOfAnyType {_configuration.SourceDatabase, mediaItemId.ToString("B").ToUpper()};
+
+            var result = _service.Execute("Sitecore.Rocks.Server.Requests.Media.DownloadAttachment", parameters, credentials);
+            return Convert.FromBase64String(result);
+        }
+
+        public void SetContextLanguage(string languageName)
+        {
+            var credentials = new Credentials
+            {
+                UserName = _configuration.SourceUserName,
+                Password = _configuration.SourcePassword
+            };
+
+            var parameters = new ArrayOfAnyType { languageName };
+
+            _service.Execute("Sitecore.Rocks.Server.Requests.Languages.SetContextLanguage", parameters, credentials);
+        }
+
+        public void GetItemHeader(Guid id)
+        {
+            var credentials = new Credentials
+            {
+                UserName = _configuration.SourceUserName,
+                Password = _configuration.SourcePassword
+            };
+
+            var parameters = new ArrayOfAnyType { _configuration.SourceDatabase };
+
+            _service.Execute("Sitecore.Rocks.Server.Requests.Languages.SetContextLanguage", parameters, credentials);
         }
     }
 }

@@ -14,5 +14,7 @@ namespace OneNorth.FieldMigrator.Configuration
 
         List<Guid> MediaItemTemplateIds { get; }
         List<IRootConfiguration> Roots { get; }
+        List<TemplateInclude> TemplateIncludes { get; }
+        List<TemplateExclude> TemplateExcludes { get; }
     }
 }

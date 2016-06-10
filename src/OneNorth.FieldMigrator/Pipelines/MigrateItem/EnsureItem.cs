@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Xml;
 using OneNorth.FieldMigrator.Pipelines.CreateItem;
-using OneNorth.FieldMigrator.Pipelines.MigrateVersion;
+using Sitecore;
 using Sitecore.Data;
 using Sitecore.Xml;
 
@@ -33,6 +33,8 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
                 _overrides.Add(key, value);
         }
 
+        public bool KeepExistingMedia { get; set; }
+
         public virtual void Process(MigrateItemPipelineArgs args)
         {
             if (args.Source == null ||
@@ -47,7 +49,12 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
             args.Item = Sitecore.Context.Database.GetItem(itemId);
 
             if (args.Item != null)
+            {
+                if (KeepExistingMedia && args.Item.Paths.IsMediaItem && args.Item.TemplateID != TemplateIDs.MediaFolder)
+                    args.AbortPipeline();
+
                 return;
+            }
 
             var results = _createItemPipeline.Run(source, itemId);
             if (results.Aborted)
@@ -56,7 +63,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
                 return;
             }
 
-            args.CreatedItem = true;
             args.Item = results.Item;
         }
     }

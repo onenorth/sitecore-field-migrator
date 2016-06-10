@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using OneNorth.FieldMigrator.Helpers;
+using Sitecore;
 using Sitecore.Data;
 using Sitecore.Data.Items;
 using Sitecore.Data.Managers;
@@ -10,10 +11,6 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
 {
     public class EnsureFolders : ICreateItemPipelineProcessor
     {
-        private readonly ID _folderTemplateId = new ID("{A87A00B1-E6DB-45AB-8B54-636FEC3B5523}");
-        private readonly ID _mediaFolderTemplateId = new ID("{FE5DD826-48C6-436D-B87A-7C4210C7413B}");
-        private readonly Guid _mediaLibraryId = new Guid("{3D6658D8-A0BF-4E75-B3E2-D050FABCF4E1}");
-
         private readonly IHardRockWebServiceProxy _hardRockWebServiceProxy;
 
         public EnsureFolders() : this(HardRockWebServiceProxy.Instance)
@@ -49,7 +46,7 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
             var path = _hardRockWebServiceProxy.GetFullPath(source.Id, firstVersion.Language, firstVersion.Version);
 
             // Get folder type based on location
-            var folderTemplateId = (path.Any(f => f.Id == _mediaLibraryId)) ? _mediaFolderTemplateId : _folderTemplateId;
+            var folderTemplateId = (path.Any(f => f.Id == ItemIDs.MediaLibraryRoot.Guid)) ? TemplateIDs.MediaFolder : TemplateIDs.Folder;
 
             // Find first ancestor that exists
             var count = path.Count;

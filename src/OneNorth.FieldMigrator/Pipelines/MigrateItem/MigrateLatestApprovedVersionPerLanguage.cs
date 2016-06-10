@@ -2,20 +2,19 @@
 using System.Linq;
 using OneNorth.FieldMigrator.Models;
 using OneNorth.FieldMigrator.Pipelines.MigrateVersion;
-using DateTime = System.DateTime;
 
 namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
 {
-    public class MigrateLatestPublishableVersionPerLanguage : IMigrateItemPipelineProcessor
+    public class MigrateLatestApprovedVersionPerLanguage : IMigrateItemPipelineProcessor
     {
         private readonly IMigrateVersionPipeline _migrateVersionPipeline;
 
-        public MigrateLatestPublishableVersionPerLanguage() : this(MigrateVersionPipeline.Instance)
+        public MigrateLatestApprovedVersionPerLanguage() : this(MigrateVersionPipeline.Instance)
         {
             
         }
 
-        internal protected MigrateLatestPublishableVersionPerLanguage(IMigrateVersionPipeline migrateVersionPipeline)
+        internal protected MigrateLatestApprovedVersionPerLanguage(IMigrateVersionPipeline migrateVersionPipeline)
         {
             _migrateVersionPipeline = migrateVersionPipeline;
         }
@@ -37,7 +36,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
             {
                 VersionModel latestVersion = null;
                 VersionModel latestApproved = null;
-                VersionModel firstPublishable = null;
 
                 // Find latest version that is publishable and is approved
                 foreach (var version in language)
@@ -45,7 +43,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
                     if (latestVersion == null)
                         latestVersion = version;
 
-                    if (version.HasWorkflow && !version.InFinalWorkflowState)
+                    if (version.HasWorkflow && version.WorkflowState == WorkflowState.NonFinal)
                         continue;
 
                     latestApproved = version;
@@ -59,7 +57,7 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
                 else if (latestVersion != null)
                 {
                     versionModels.Add(latestVersion);
-                    Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Approved version not found: {0}, {1}, {2}", args.Source.Id, latestVersion.Language, args.Source.AsRelativePathString()), this);
+                    Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Approved version not found: {0}, {1}, {2}", args.Source.Id, latestVersion.Language, args.Source.FullPath(x => x.Parent, x => x.Name)), this);
                 }
             }
 

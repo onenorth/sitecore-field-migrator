@@ -43,9 +43,12 @@ namespace OneNorth.FieldMigrator
                 var database = Database.GetDatabase(_configuration.TargetDatabase);
                 using (new DatabaseSwitcher(database))
                 {
-                    foreach (var root in _configuration.Roots)
+                    using (new Sitecore.SecurityModel.SecurityDisabler())
                     {
-                        _migrationHelper.MigrateRoot(root.Id);
+                        foreach (var root in _configuration.Roots)
+                        {
+                            _migrationHelper.MigrateRoot(root.Id);
+                        }
                     }
                 }
             }

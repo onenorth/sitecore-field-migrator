@@ -174,18 +174,18 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\TemplateExclude.cs" />
+    <Compile Include="Configuration\TemplateInclude.cs" />
     <Compile Include="Configuration\FieldMigratorConfiguration.cs" />
     <Compile Include="Configuration\RootConfiguration.cs" />
     <Compile Include="Configuration\IFieldMigratorConfiguration.cs" />
     <Compile Include="Configuration\IRootConfiguration.cs" />
-    <Compile Include="Configuration\ITemplateConfiguration.cs" />
     <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="Helpers\IHardRockWebServiceProxy.cs" />
     <Compile Include="Helpers\IMigrationHelper.cs" />
     <Compile Include="Helpers\HardRockWebServiceProxy.cs" />
     <Compile Include="Helpers\MigrationHelper.cs" />
     <Compile Include="IMigrator.cs" />
-    <Compile Include="ItemModelExtensions.cs" />
     <Compile Include="Migrator.cs" />
     <Compile Include="Models\ChildModel.cs" />
     <Compile Include="Models\FieldModel.cs" />
@@ -193,6 +193,7 @@
     <Compile Include="Models\VersionModel.cs" />
     <Compile Include="Models\FolderModel.cs" />
     <Compile Include="Models\WorkflowModel.cs" />
+    <Compile Include="Models\WorkflowState.cs" />
     <Compile Include="Pipelines\CreateItem\CreateItemPipeline.cs" />
     <Compile Include="Pipelines\CreateItem\CreateItemPipelineArgs.cs" />
     <Compile Include="Pipelines\CreateItem\EnsureFolders.cs" />
@@ -207,21 +208,22 @@
     <Compile Include="Pipelines\MigrateField\IMigrateFieldPipelineProcessor.cs" />
     <Compile Include="Pipelines\MigrateField\ResolveField.cs" />
     <Compile Include="Pipelines\MigrateField\SkipFields.cs" />
+    <Compile Include="Pipelines\MigrateField\SkipMediaFields.cs" />
     <Compile Include="Pipelines\MigrateField\SkipStandardFields.cs" />
-    <Compile Include="Pipelines\MigrateItem\ForMediaItemsAttachUnversionedMedia.cs" />
+    <Compile Include="Pipelines\MigrateItem\CreateMediaItem.cs" />
+    <Compile Include="Pipelines\MigrateItem\AttachUnversionedMedia.cs" />
     <Compile Include="Pipelines\MigrateItem\CheckItemTemplate.cs" />
-    <Compile Include="Pipelines\MigrateItem\CheckItemTemplateExclude.cs" />
     <Compile Include="Pipelines\CreateItem\CreateItem.cs" />
     <Compile Include="Pipelines\MigrateItem\EnsureItem.cs" />
     <Compile Include="Pipelines\MigrateItem\IMigrateItemPipelineProcessor.cs" />
     <Compile Include="Pipelines\MigrateItem\MigrateItemPipeline.cs" />
     <Compile Include="Pipelines\MigrateItem\MigrateItemPipelineArgs.cs" />
     <Compile Include="Pipelines\MigrateItem\IMigrateItemPipeline.cs" />
-    <Compile Include="Pipelines\MigrateItem\MigrateLatestPublishableVersionPerLanguage.cs" />
+    <Compile Include="Pipelines\MigrateItem\MigrateLatestApprovedVersionPerLanguage.cs" />
     <Compile Include="Pipelines\CreateItem\ResolveParent.cs" />
     <Compile Include="Pipelines\CreateItem\ResolveTemplate.cs" />
-    <Compile Include="Pipelines\MigrateItem\CheckItemTemplateInclude.cs" />
-    <Compile Include="Pipelines\MigrateVersion\ForMediaItemsAttachVersionedMedia.cs" />
+    <Compile Include="Pipelines\MigrateItem\SkipAlreadyProcessed.cs" />
+    <Compile Include="Pipelines\MigrateVersion\AttachVersionedMedia.cs" />
     <Compile Include="Pipelines\MigrateVersion\BeginEdit.cs" />
     <Compile Include="Pipelines\MigrateVersion\EndEdit.cs" />
     <Compile Include="Pipelines\MigrateVersion\EnsureLanguageVersion.cs" />

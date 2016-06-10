@@ -1,4 +1,5 @@
-﻿using OneNorth.FieldMigrator.Models;
+﻿using System;
+using OneNorth.FieldMigrator.Models;
 using Sitecore.Data;
 using Sitecore.Pipelines;
 
@@ -17,12 +18,20 @@ namespace OneNorth.FieldMigrator.Pipelines.CreateItem
         public CreateItemPipelineArgs Run(ItemModel source, ID itemId)
         {
             var args = new CreateItemPipelineArgs { Source = source, ItemId = itemId };
-            CorePipeline.Run("createItem", args, "OneNorth.Migrator");
+            try
+            {
+                CorePipeline.Run("createItem", args, "OneNorth.Migrator");
 
-            if (args.Aborted || args.Item == null)
-                Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] Could not create: {0}", source.Name), this);
-            else
-                Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Created: {0}", args.Item.Paths.FullPath), this);
+                if (args.Item == null)
+                    Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] (CreateItemPipeline) Did not create: {0}", source.FullPath(x => x.Parent, x => x.Name)), this);
+                else
+                    Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] (CreateItemPipeline) Created: {0}", args.Item.Paths.FullPath), this);
+            }
+            catch (Exception ex)
+            {
+                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (CreateItemPipeline) {0}", source.FullPath(x => x.Parent, x => x.Name)), ex, this);
+            }
+            
             return args;
         }
     }
