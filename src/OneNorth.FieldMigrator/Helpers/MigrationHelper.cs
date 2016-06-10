@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using OneNorth.FieldMigrator.Models;
 using OneNorth.FieldMigrator.Pipelines.MigrateItem;
 
@@ -33,7 +34,14 @@ namespace OneNorth.FieldMigrator.Helpers
 
         public void MigrateRoot(Guid itemId)
         {
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
             _hardRockWebServiceProxy.TraverseTree(itemId, TraverseTreeItemAction);
+
+            stopWatch.Stop();
+
+            Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] Migrated Root {0} in {1}", itemId, stopWatch.Elapsed), this);
         }
 
         private void TraverseTreeItemAction(ItemModel itemModel)

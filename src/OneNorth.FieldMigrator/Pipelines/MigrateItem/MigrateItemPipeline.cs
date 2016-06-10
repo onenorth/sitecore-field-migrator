@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using OneNorth.FieldMigrator.Models;
 using Sitecore.Pipelines;
 
@@ -19,15 +20,21 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateItem
             var args = new MigrateItemPipelineArgs { Source = source };
             try
             {
+                var stopWatch = new Stopwatch();
+                stopWatch.Start();
+
                 CorePipeline.Run("migrateItem", args, "OneNorth.Migrator");
+
+                stopWatch.Stop();
+
                 if (args.Item == null)
-                    Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] (MigrateItemPipeline) Did not migrate: {0}", source.FullPath(x => x.Parent, x => x.Name)), this);
+                    Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] (MigrateItemPipeline) Did not migrate: {0} {1} in {2}", source.Id, source.FullPath(x => x.Parent, x => x.Name), stopWatch.Elapsed), this);
                 else
-                    Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] (MigrateItemPipeline) Migrated: {0}", args.Item.Paths.FullPath), this);
+                    Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] (MigrateItemPipeline) Migrated: {0} {1} in {2}", args.Item.ID, args.Item.Paths.FullPath, stopWatch.Elapsed), this);
             }
             catch (Exception ex)
             {
-                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (MigrateItemPipeline) {0}", source.FullPath(x => x.Parent, x => x.Name)), ex, this);
+                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (MigrateItemPipeline) {0} {1}", source.Id, source.FullPath(x => x.Parent, x => x.Name)), ex, this);
             }
             return args;
         }

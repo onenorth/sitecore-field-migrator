@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
 using System.Xml.Linq;
@@ -53,7 +54,7 @@ namespace OneNorth.FieldMigrator.Helpers
             var itemModel = GetItem(rootId);
             if (itemModel == null)
             {
-                Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] (TraverseTree) could not find item with id:{0}", rootId), this);
+                Sitecore.Diagnostics.Log.Warn(string.Format("[FieldMigrator] (TraverseTree) could not find item with id:{0}", rootId), this);
                 return;
             }
             var templateInclude = _configuration.TemplateIncludes.FirstOrDefault(x => x.SourceTemplateId == itemModel.TemplateId);
@@ -61,23 +62,34 @@ namespace OneNorth.FieldMigrator.Helpers
             if (deep)
                 itemModel = GetItem(rootId, deep:true);
 
-            // Process Root
-            RunItemActions(itemModel, itemAction);
+            if (itemModel != null)
+            {
+                // Process Root
+                RunItemActions(itemModel, itemAction);
 
-            // Process Children if needed
-            if (!deep)
-                TraverseChildren(itemModel, itemAction);
+                // Process Children if needed
+                if (!deep)
+                    TraverseChildren(itemModel, itemAction);
+            }
         }
 
         private void RunItemActions(ItemModel itemModel, Action<ItemModel> itemAction)
         {
-            itemAction(itemModel);
-            if (itemModel.Children != null)
+            try
             {
-                foreach (var child in itemModel.Children)
+                itemAction(itemModel);
+
+                if (itemModel.Children != null)
                 {
-                    RunItemActions(child, itemAction);
+                    foreach (var child in itemModel.Children)
+                    {
+                        RunItemActions(child, itemAction);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (HardRockWebServiceProxy) RunItemActions ItemId: {0}", itemModel.Id), ex, this);
             }
         }
 
@@ -89,58 +101,80 @@ namespace OneNorth.FieldMigrator.Helpers
                 var templateInclude = _configuration.TemplateIncludes.FirstOrDefault(x => x.SourceTemplateId == child.TemplateId);
                 var deep = (templateInclude != null && templateInclude.IncludeAllDescendants);
                 var itemModel = GetItem(child.Id, parent, deep);
-                RunItemActions(itemModel, itemAction);
-                if (!deep && child.HasChildren)
-                    TraverseChildren(itemModel, itemAction);
+                if (itemModel != null)
+                {
+                    RunItemActions(itemModel, itemAction);
+                    if (!deep && child.HasChildren)
+                        TraverseChildren(itemModel, itemAction);
+                }
             }
         }
 
         private IEnumerable<ChildModel> GetChildren(Guid parentId)
         {
-            var credentials = new Credentials
-            {
-                UserName = _configuration.SourceUserName,
-                Password = _configuration.SourcePassword
-            };
-
-            var results = _service.GetChildren(parentId.ToString().ToUpper(), _configuration.SourceDatabase, credentials);
-            var childElements = results.XPathSelectElements("//item");
-
             var children = new List<ChildModel>();
-            foreach (var childElement in childElements)
+            try
             {
-                var child = new ChildModel
+                var credentials = new Credentials
                 {
-                    HasChildren = int.Parse(childElement.Attribute("haschildren").Value) == 1,
-                    Id = Guid.Parse(childElement.Attribute("id").Value),
-                    Name = childElement.Value,
-                    ParentId = parentId,
-                    TemplateId = Guid.Parse(childElement.Attribute("templateid").Value)
+                    UserName = _configuration.SourceUserName,
+                    Password = _configuration.SourcePassword
                 };
 
-                children.Add(child);
-            }
+                var results = _service.GetChildren(parentId.ToString().ToUpper(), _configuration.SourceDatabase, credentials);
+                var childElements = results.XPathSelectElements("//item");
 
+                foreach (var childElement in childElements)
+                {
+                    var child = new ChildModel
+                    {
+                        HasChildren = int.Parse(childElement.Attribute("haschildren").Value) == 1,
+                        Id = Guid.Parse(childElement.Attribute("id").Value),
+                        Name = childElement.Value,
+                        ParentId = parentId,
+                        TemplateId = Guid.Parse(childElement.Attribute("templateid").Value)
+                    };
+
+                    children.Add(child);
+                }
+            }
+            catch (Exception ex)
+            {
+                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (HardRockWebServiceProxy) GetChildren ParentId: {0}", parentId), ex, this);
+            }
             return children;
         }
 
         private ItemModel GetItem(Guid id, ItemModel parent = null, bool deep = false)
         {
-            var credentials = new Credentials
+            try
             {
-                UserName = _configuration.SourceUserName,
-                Password = _configuration.SourcePassword
-            };
+                var credentials = new Credentials
+                {
+                    UserName = _configuration.SourceUserName,
+                    Password = _configuration.SourcePassword
+                };
 
-            Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] GetXML id:{0} deep:{1}", id, deep), this);
-            var results = _service.GetXML(id.ToString().ToUpper(), deep, _configuration.SourceDatabase, credentials);
-            Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] GetXML id:{0} deep:{1} finished", id, deep), this);
+                var stopWatch = new Stopwatch();
+                stopWatch.Start();
 
-            var itemElement = results.XPathSelectElement("//item");
-            if (itemElement == null)
-                return null;
+                var results = _service.GetXML(id.ToString().ToUpper(), deep, _configuration.SourceDatabase, credentials);
 
-            return GetItem(itemElement, parent, deep);
+                stopWatch.Stop();
+
+                Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] (HardRockWebServiceProxy) GetXML id:{0} deep:{1} finished in {2}", id, deep, stopWatch.Elapsed), this);
+
+                var itemElement = results.XPathSelectElement("//item");
+                if (itemElement == null)
+                    return null;
+
+                return GetItem(itemElement, parent, deep);
+            }
+            catch (Exception ex)
+            {
+                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (HardRockWebServiceProxy) GetItem ItemId: {0}", id), ex, this);
+            }
+            return null;
         }
 
         private ItemModel GetItem(XElement itemElement, ItemModel parent, bool deep)

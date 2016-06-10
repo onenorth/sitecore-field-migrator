@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Diagnostics;
 using OneNorth.FieldMigrator.Configuration;
 using OneNorth.FieldMigrator.Helpers;
 using Sitecore.ContentSearch.Maintenance;
@@ -40,6 +41,9 @@ namespace OneNorth.FieldMigrator
             {
                 IndexCustodian.PauseIndexing();
 
+                var stopWatch = new Stopwatch();
+                stopWatch.Start();
+
                 var database = Database.GetDatabase(_configuration.TargetDatabase);
                 using (new DatabaseSwitcher(database))
                 {
@@ -51,6 +55,10 @@ namespace OneNorth.FieldMigrator
                         }
                     }
                 }
+
+                stopWatch.Stop();
+
+                Sitecore.Diagnostics.Log.Info(String.Format("[FieldMigrator] Migration Completed in {0}", stopWatch.Elapsed), this);
             }
             finally
             {

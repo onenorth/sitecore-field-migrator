@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using OneNorth.FieldMigrator.Models;
 using Sitecore.Data.Items;
 using Sitecore.Pipelines;
@@ -20,12 +21,18 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
             var args = new MigrateVersionPipelineArgs { Source = source, Item = item };
             try
             {
+                var stopWatch = new Stopwatch();
+                stopWatch.Start();
+
                 CorePipeline.Run("migrateVersion", args, "OneNorth.Migrator");
-                Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] (MigrateVersionPipeline) Migrated: {0}", item.Uri), this);
+
+                stopWatch.Stop();
+
+                Sitecore.Diagnostics.Log.Info(string.Format("[FieldMigrator] (MigrateVersionPipeline) Migrated: {0} in {1}", args.Item.Uri, stopWatch.Elapsed), this);
             }
             catch (Exception ex)
             {
-                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (MigrateVersionPipeline) {0}", item.Uri), ex, this);
+                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (MigrateVersionPipeline) {0}", args.Item.Uri), ex, this);
             }
             
             return args;
