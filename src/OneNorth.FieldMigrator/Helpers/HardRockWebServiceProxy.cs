@@ -172,7 +172,7 @@ namespace OneNorth.FieldMigrator.Helpers
             }
             catch (Exception ex)
             {
-                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (HardRockWebServiceProxy) GetItem ItemId: {0}", id), ex, this);
+                Sitecore.Diagnostics.Log.Error(string.Format("[FieldMigrator] (HardRockWebServiceProxy) GetItem ItemId: {0} deep:{1}", id, deep), ex, this);
             }
             return null;
         }
