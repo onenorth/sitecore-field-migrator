@@ -199,7 +199,10 @@ namespace OneNorth.FieldMigrator.Helpers
 
             // Gather the versions
             var versionElements = itemElement.Elements("version");
-            itemModel.Versions = versionElements.Select(x => GetVersion(x, itemModel)).ToList();
+            itemModel.Versions = versionElements
+                .Select(x => GetVersion(x, itemModel))
+                .Where(x => x != null)
+                .ToList();
 
             // Gather the children
             if (deep)
@@ -227,15 +230,15 @@ namespace OneNorth.FieldMigrator.Helpers
             versionModel.Fields = GetTemplateFields(owner.TemplateId, owner.Id, versionModel.Language, versionModel.Version);
 
             // Populate the field values
-            PopulateFieldValues(versionModel, versionElement);
-
-            return versionModel;
+            if (PopulateFieldValues(versionModel, versionElement))
+                return versionModel;
+            return null;
         }
 
-        private void PopulateFieldValues(VersionModel version, XElement versionElement)
+        private bool PopulateFieldValues(VersionModel version, XElement versionElement)
         {
             if (version == null || version.Fields == null || versionElement == null || versionElement.Name != "version")
-                return;
+                return false;
 
             var fields = version.Fields;
 
@@ -244,6 +247,9 @@ namespace OneNorth.FieldMigrator.Helpers
             {
                 field.Version = version;
             }
+
+            // This version may not exist if it is version #1.  This is due to behavior of the Hard Rocks web service.
+            var versionExists = version.Version != 1;
 
             // Populate known field values
             var fieldElements = versionElement.Descendants("field");
@@ -255,7 +261,11 @@ namespace OneNorth.FieldMigrator.Helpers
                 var fieldId = Guid.Parse(fieldElement.Attribute("tfid").Value);
                 var field = fields.FirstOrDefault(x => x.Id == fieldId);
                 if (field != null)
+                {
+                    if (!field.Shared)
+                        versionExists = true;
                     field.Value = value;
+                }
             }
 
             // Determine workflow
@@ -278,6 +288,8 @@ namespace OneNorth.FieldMigrator.Helpers
                 if (workflowState != Guid.Empty)
                     version.WorkflowState = (workflow.FinalState == workflowState) ? WorkflowState.Final : WorkflowState.NonFinal;
             }
+
+            return versionExists;
         }
 
         private List<FieldModel> GetTemplateFields(Guid templateId, Guid itemId, string language, int version)
