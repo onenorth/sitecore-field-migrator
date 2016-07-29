@@ -85,7 +85,7 @@ The configration is organized from more general stuff at the top to more specifi
 * **migrateField pipeline** - Holds the pipeline steps that manage migrating at the field level.
 * **database/events** - There are various settings to improve the performance of the field migrator.  These are meant to be temporary and should be removed when not running a migration.
 
-Here is a [link](https://bitbucket.org/onenorth/sitecore-field-migrator/src/66f8bfbffe618d7e0fddf79c61bf59e9713a42c0/src/OneNorth.FieldMigrator/App_Config/Include/z.OneNorth.FieldMigrator.config?at=master&fileviewer=file-view-default) to the configuarion file that is provided out of the box.
+Here is a [link](src/OneNorth.FieldMigrator/App_Config/Include/z.OneNorth.FieldMigrator.config) to the configuarion file that is provided out of the box.
 The various settings are commented directly in the configuration file.
 
 ## Running ##
@@ -102,4 +102,3 @@ You may need to perform the following steps after running the migrator:
 # License #
 
 The associated code is released under the terms of the [MIT license](http://onenorth.mit-license.org).
-
