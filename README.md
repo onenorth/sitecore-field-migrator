@@ -43,6 +43,12 @@ Here are the key features of the Field Migrator:
     1. Automatically skips standard fields with configurable exceptions.
     1. Can re-map fields.
     1. Automatically detects media references to import media.
+    
+### Data Flow ###
+
+Here is a typical data flow through the pipelines.  The pipeline steps can be added, removed, and replaced.
+
+![workflow](img/workflow.png)
 
 ## Installation ##
 
@@ -93,7 +99,9 @@ The various settings are commented directly in the configuration file.
 The migrator can be run by navigating to: /sitecore/admin/FieldMigrator/Default.aspx.
 Click the **Run Field Migrator** button.
 
-> Note: there is no progress indicator.  You can check the Sitecore logs for an indication of progress.
+> Note: there is no progress indicator.
+You can check the Sitecore logs for an indication of progress.
+[BareTale](https://www.baremetalsoft.com/baretail/) provides a way to monitor logs in real time.
 
 You may need to perform the following steps after running the migrator:
 * Publish the items that were migrated
