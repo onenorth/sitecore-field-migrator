@@ -48,7 +48,7 @@ Here are the key features of the Field Migrator:
 
 Here is a typical data flow through the pipelines.  The pipeline steps can be added, removed, and replaced.
 
-![workflow](img/workflow.png)
+![workflow](img/Workflow.png)
 
 ## Installation ##
 
