@@ -54,6 +54,8 @@ Here is a typical data flow through the pipelines.  The pipeline steps can be ad
 
 Components need to be installed on both the **Source** and **Target** Sitecore instances.
 
+![installation](img/Installation.png)
+
 ### Source Sitecore Instance ###
 
 The Hard Rocks web service needs to be installed on the source instance of Sitecore.
