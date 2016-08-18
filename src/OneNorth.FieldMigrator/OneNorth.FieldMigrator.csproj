@@ -48,6 +48,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Sitecore.Client, Version=8.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\inetpub\wwwroot\Sidley81u3\Website\bin\Sitecore.Client.dll</HintPath>
+    </Reference>
     <Reference Include="Sitecore.ContentSearch">
       <HintPath>C:\inetpub\wwwroot\Sitecore81u2\Website\bin\Sitecore.ContentSearch.dll</HintPath>
     </Reference>
@@ -233,6 +237,7 @@
     <Compile Include="Pipelines\MigrateVersion\MigrateFields.cs" />
     <Compile Include="Pipelines\MigrateVersion\MigrateVersionPipeline.cs" />
     <Compile Include="Pipelines\MigrateVersion\MigrateVersionPipelineArgs.cs" />
+    <Compile Include="Pipelines\MigrateVersion\SkipUnversionedMedia.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>

@@ -22,16 +22,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
             _hardRockWebServiceProxy = hardRockWebServiceProxy;
         }
 
-        private readonly List<string> _supportedLanguages = new List<string>();
-        public virtual List<string> SupportedLanguages { get { return _supportedLanguages; } }
-        protected virtual void AddSupportedLanguage(string field)
-        {
-            if (string.IsNullOrWhiteSpace(field))
-                return;
-
-            _supportedLanguages.Add(field.ToLower());
-        }
-
         public virtual void Process(MigrateVersionPipelineArgs args)
         {
             if (args.Source == null ||
@@ -40,9 +30,6 @@ namespace OneNorth.FieldMigrator.Pipelines.MigrateVersion
 
             var source = args.Source;
             var item = args.Item;
-
-            if (!SupportedLanguages.Contains(item.Language.Name.ToLower()))
-                return;
 
             // Confirm we are processing a Media Item
             if (!item.Paths.IsMediaItem || item.TemplateID == TemplateIDs.MediaFolder)
