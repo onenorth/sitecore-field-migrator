@@ -8,7 +8,7 @@ The Sitecore Field Migrator allows migration of item field content from one inst
 Only the items and field values specified are actually copied.
 Currently, the Field Migrator only support moving Content and Media Items, and their fields values.
 The primary use of this migrator would be to move data from one version of Sitecore to another without the need to upgrade.
-Using this took makes the most sense when a Sitecore site is being redesigned and rebuilt on a newer version of Sitecore.
+Using this tool makes the most sense when a Sitecore site is being redesigned and rebuilt on a newer version of Sitecore.
 In this case only the content is to be copied, layouts and other data will be different in the new site and does not need to be migrated.
 
 The migrator runs in the context of the target site.
