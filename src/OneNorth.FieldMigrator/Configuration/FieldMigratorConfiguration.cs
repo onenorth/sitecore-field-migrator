@@ -50,8 +50,7 @@ namespace OneNorth.FieldMigrator.Configuration
         {
             _roots.Add(new RootConfiguration
             {
-                Name = XmlUtil.GetAttribute("name", node),
-                Id = Guid.Parse(XmlUtil.GetAttribute("id", node))
+                SourceItemId = Guid.Parse(XmlUtil.GetAttribute("sourceItemId", node))
             });
         }
 

@@ -51,7 +51,7 @@ namespace OneNorth.FieldMigrator
                     {
                         foreach (var root in _configuration.Roots)
                         {
-                            _migrationHelper.MigrateRoot(root.Id);
+                            _migrationHelper.MigrateRoot(root.SourceItemId);
                         }
                     }
                 }

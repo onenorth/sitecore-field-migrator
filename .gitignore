@@ -1,6 +1,7 @@
 #Visual Studio Files
 bin/
 obj/
+.vs/
 *.suo
 *.user
 *.dll
