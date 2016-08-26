@@ -25,7 +25,7 @@ Here are the key features of the Field Migrator:
 1. Based on pipelines for easy logic replacement.
 1. Re-runable. The migration can be run over and over to migrate live production data to the new site.
 1. Configuration-driven.
-1. Migration can be triggered via web page or api call.
+1. Migration can be triggered via web page or API call.
 1. Items
     1. Configure the root node(s) to migrate.  All children are migrated.
     1. Configure the items based on templates to include/exclude when migrating.
@@ -54,6 +54,8 @@ Here is a typical data flow through the pipelines.  The pipeline steps can be ad
 ## Installation ##
 
 Components need to be installed on both the **Source** and **Target** Sitecore instances.
+
+![installation](img/Installation.png)
 
 ### Source Sitecore Instance ###
 
